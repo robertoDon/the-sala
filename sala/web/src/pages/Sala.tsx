@@ -325,7 +325,7 @@ export default function SalaPage() {
   };
 
   const irPara = useCallback(async (alvo: number) => {
-    if (window.matchMedia("(max-width: 720px)").matches) setPainel(null);
+    if (window.matchMedia("(max-width: 720px), (max-height: 500px) and (pointer: coarse)").matches) setPainel(null);
     setDestaque(alvo); window.setTimeout(() => setDestaque((d) => (d === alvo ? null : d)), 1600);
     const el = document.getElementById(`m${alvo}`);
     if (el) { noFim.current = false; el.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
@@ -728,7 +728,7 @@ export default function SalaPage() {
             )}
 
             {msgs !== null && msgs.length > 0 && msgs.length < 12 && !msgs.some((m) => m.tipo !== "mensagem") && agentes.length > 0 && (
-              <p className="dica-sala"><IconeProposta tamanho={16} /> {t("Peça uma decisão com ", "Ask for a decision with ")}<strong>{t("Propor", "Propose")}</strong>{t(", ou pergunte a todos os agentes com ", ", or ask all agents with ")}<strong>@{tc("agentes", "agents")}</strong>{t(" e compare as respostas.", " and compare their answers.")}</p>
+              <p className="dica-sala"><IconeProposta tamanho={16} /><span>{t("Peça uma decisão com ", "Ask for a decision with ")}<strong>{t("Propor", "Propose")}</strong>{t(", ou pergunte a todos os agentes com ", ", or ask all agents with ")}<strong>@{tc("agentes", "agents")}</strong>{t(" e compare as respostas.", " and compare their answers.")}</span></p>
             )}
 
             {msgs?.map((m, i) => {

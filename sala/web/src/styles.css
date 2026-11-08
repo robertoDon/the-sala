@@ -390,7 +390,8 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 /* mensagens */
 .msg-bloco { display: flex; flex-direction: column; }
 .msg { display: flex; flex-direction: column; gap: 4px; max-width: 100%; min-width: 0; }
-.msg-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-top: 20px; }
+.msg-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; font-size: 12px; margin-top: 20px; }
+.msg-meta > * { white-space: nowrap; }
 .msg-bloco:has(> .msg-continua) { margin-top: -2px; }
 .msg-meta strong { font-weight: 600; letter-spacing: -0.01em; }
 .msg-meta time { color: var(--cinza); }
@@ -539,8 +540,9 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 .proposta-rotulo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: var(--t1); font-weight: 600; color: inherit; }
 .proposta-rotulo .nota { font-weight: 400; }
 .proposta-pe { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--linha); }
-.decidir { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
-.decidir .btn { justify-content: center; min-height: 36px; white-space: normal; text-align: center; }
+/* lado a lado quando cabem (cada um cresce a partir do próprio texto); se não, cada um numa linha. Rótulo nunca quebra no meio. */
+.decidir { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.decidir .btn { flex: 1 1 auto; justify-content: center; min-height: 36px; white-space: nowrap; }
 /* no cartão: cada botão do tamanho do texto, à direita; se não couber, quebra para a linha de baixo */
 .msg-proposta .decidir { display: flex; flex-wrap: wrap; justify-content: flex-end; width: auto; max-width: 100%; margin-left: auto; }
 .msg-proposta .decidir .btn { flex: 0 1 auto; min-width: 120px; }
@@ -672,6 +674,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
   background: var(--suave); color: var(--cinza); font-size: var(--t1);
 }
 .dica-sala svg { flex: none; }
+.dica-sala > span { flex: 1; min-width: 0; text-wrap: pretty; }
 .feed-vazio { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 340px; padding: 40px 16px; color: var(--cinza); }
 .feed-vazio strong { color: var(--tinta); }
 .feed-vazio .vazio-icone { margin-bottom: 4px; color: var(--agente-tinta); background: var(--agente); }
@@ -1295,7 +1298,8 @@ span.tarefa-check { cursor: default; }
 .agente-dados > div:last-child { border-bottom: 0; }
 .agente-dados dt { font-size: 13px; color: var(--cinza); }
 .agente-dados dd { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
-.agente-dados code { font-size: 12.5px; padding: 2px 6px; border-radius: 6px; background: var(--suave); }
+.agente-dados code { font-size: 12.5px; padding: 2px 6px; border-radius: 6px; background: var(--suave); white-space: nowrap; }
+.agente-dados dt { white-space: nowrap; }
 .conectar-explica { margin: -8px 0 0; line-height: 1.5; text-wrap: pretty; }
 .conectar-conexoes { list-style: none; margin: -8px 0 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--linha); border-radius: var(--r3); overflow: hidden; background: var(--fundo); }
 .conectar-conexoes li { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 10px 8px 14px; }
@@ -1357,10 +1361,11 @@ span.tarefa-check { cursor: default; }
 .conectar-extra-icone { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--suave); color: var(--cinza); box-shadow: inset 0 0 0 1px var(--linha); }
 .conectar-extra > svg { flex: none; color: var(--cinza-claro); transform: rotate(180deg); }
 .conectar-pe {
-  position: sticky; bottom: -24px; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  position: sticky; bottom: -24px; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   margin: 0 -24px -24px; padding: 14px 24px 18px; border-top: 1px solid var(--linha); background: var(--elevado);
 }
 .conectar-assim { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.conectar-pe > .btn { flex: none; }
 .conectar-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 8px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: var(--agente); color: var(--agente-tinta); }
 
 /* privacidade: três promessas com um pedaço da tela */
@@ -1562,10 +1567,25 @@ span.tarefa-check { cursor: default; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
 }
 
-/* ================================================================ celular */
+/* ================================================================ tela média (tablet, notebook pequeno) */
+
+/* sem espaço para conversa e painel lado a lado: o painel abre por cima da conversa, à direita */
+@media (max-width: 1180px) {
+  .painel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 15; max-width: 100%; box-shadow: var(--sombra-alta); }
+}
+/* tablet em pé: lateral mais estreita, Convidar só com o ícone (o nome da sala precisa do espaço) e botões da proposta ocupando a largura */
+@media (max-width: 1024px) {
+  :root { --lateral-largura: 236px; }
+  .sala-topo .btn-convidar { width: 36px; padding: 0; justify-content: center; }
+  .sala-topo .btn-convidar > span { display: none; }
+  .msg-proposta .decidir { width: 100%; }
+  .msg-proposta .decidir .btn { flex: 1 1 auto; }
+}
+
+/* ================================================================ celular (em pé, ou deitado: pouca altura e toque) */
 
 .so-celular { display: none; }
-@media (max-width: 720px) {
+@media (max-width: 720px), (max-height: 500px) and (pointer: coarse) {
   :root { --t2: 15px; --t-conversa: 15px; }
   input, textarea, select, .compor textarea { font-size: 16px; } /* iPhone não dá zoom ao tocar */
   .btn { min-height: 44px; }
@@ -1625,15 +1645,20 @@ span.tarefa-check { cursor: default; }
   .msg-proposta .msg-linha { position: relative; }
   .msg-proposta .msg-acoes { position: absolute; top: -14px; right: 8px; z-index: 1; flex-direction: row; }
   .msg-proposta:not(:focus-within) .msg-acoes { background: var(--elevado); border: 1px solid var(--linha); border-radius: 999px; }
-  .msg-proposta .decidir { display: grid; width: 100%; }
-  .msg-proposta .decidir .btn { min-width: 0; }
+  .msg-proposta .decidir { width: 100%; }
+  .msg-proposta .decidir .btn { flex: 1 1 auto; min-width: 0; }
   .decidir .btn { min-height: 44px; }
   .seletor-emoji { bottom: auto; top: 50%; transform: translateY(-50%); right: calc(100% + 6px); animation: none; }
   .msg-minha .seletor-emoji { right: auto; left: calc(100% + 6px); }
   .reacao { min-height: 32px; }
   .tarefa-chip span { white-space: normal; }
   .anexos-imagens { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .passos-sala li { flex-wrap: wrap; padding: 8px 0; }
+  .passos-sala { padding: 16px; }
+  /* no celular o botão desce para baixo do texto, alinhado com ele */
+  .passos-sala li { display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: 12px; row-gap: 10px; padding: 12px 0; }
+  .passos-sala li > .btn { grid-column: 2; justify-self: start; }
+  .dica-sala { align-items: flex-start; }
+  .dica-sala svg { margin-top: 2px; }
   .ir-fim { right: 14px; bottom: 12px; width: 44px; height: 44px; }
 
   .painel { position: fixed; inset: 0; width: auto; z-index: 20; border-left: 0; animation: modal-entra var(--entra); }
@@ -1660,4 +1685,19 @@ span.tarefa-check { cursor: default; }
   .cmd-lista button { min-height: 44px; }
   .ajuda-topo .display { font-size: 28px; }
   .auth { max-width: none; }
+}
+
+/* celular estreito: o chip "Claude Code de Roberto" já diz onde ele aparece */
+@media (max-width: 400px) { .conectar-assim > .nota { display: none; } }
+
+/* celular deitado: a altura é pouca e o recorte da câmera fica num dos lados */
+@media (max-height: 500px) and (pointer: coarse) {
+  .app { padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+  .sala-topo { min-height: 48px; padding-top: 0; padding-bottom: 0; }
+  .feed { padding-top: 10px; padding-bottom: 10px; }
+  .compor-caixa { gap: 2px; padding-top: 6px; }
+  .modal-conectar { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+  /* a lateral rola inteira: com a lista presa no meio sobrava uma sala visível */
+  .lateral { overflow-y: auto; }
+  .lista-salas { flex: none; overflow: visible; }
 }

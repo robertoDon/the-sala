@@ -23,7 +23,11 @@ export function nomeDoAgente(cliente: string) {
   return cliente.trim().slice(0, 40) || "Agente";
 }
 
-const quandoHora = (iso: string) => new Date(iso).toLocaleString(locale(), { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(".", "");
+// "3 de nov, 23:11"; o ano só aparece quando não é o atual
+const quandoHora = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleString(locale(), { day: "numeric", month: "short", ...(d.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}), hour: "2-digit", minute: "2-digit" }).replace(".", "");
+};
 const quando = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: "2-digit", month: "short" }) : t("nunca", "never"));
 
 export function Conectar({ fechar }: { fechar: () => void }) {
@@ -230,7 +234,7 @@ Keep listening to the room in the background and respond to anything meant for y
                     <span className="conexao-icone" aria-hidden><IconePlugue tamanho={15} /></span>
                     <span className="linha-texto">
                       <span className="linha-titulo">{aberto.grants.length > 1 ? t(`Conexão ${k + 1}`, `Connection ${k + 1}`) : t("Conector", "Connector")}{g.client.name !== aberto.nome ? <span className="nota"> · {g.client.name}</span> : null}</span>
-                      <span className="presenca">{t("conectada em", "connected on")} {quandoHora(g.granted_at)}{todas.length > 1 && `g:${g.client.id}` === maisRecente ? t(" · a mais recente", " · most recent") : ""}</span>
+                      <span className="presenca">{t("desde", "since")} {quandoHora(g.granted_at)}{todas.length > 1 && `g:${g.client.id}` === maisRecente ? t(" · a mais recente", " · most recent") : ""}</span>
                     </span>
                     <button type="button" className={`btn btn-pequeno ${confirmando === `g:${g.client.id}` ? "btn-perigo-cheio" : "btn-texto btn-perigo"}`} onClick={() => desconectar(`g:${g.client.id}`)}>
                       {confirmando === `g:${g.client.id}` ? t("Confirmar", "Confirm") : t("Desconectar", "Disconnect")}
