@@ -3,6 +3,7 @@ import { copiarTexto, linksDe, sb, subirArquivo, tamanhoLegivel, LIMITE_ARQUIVO 
 import { IconeArquivo, IconeBiblioteca, IconeFechar, IconeLink, IconeMais, IconeMemoria, IconeVoltar } from "./Icones";
 import { Menu } from "./Menu";
 import { erro as msgErro, locale, t } from "../i18n";
+import { recado } from "./Recados";
 
 export type ItemBiblioteca = {
   id: number; sala_id: string; user_id: string; agente: string | null; tipo: "arquivo" | "link";
@@ -68,9 +69,8 @@ export function Biblioteca({ salaId, eu, podeEscrever, nome, fechar, abrirMemori
   };
 
   const tirar = async (b: ItemBiblioteca) => {
-    if (!confirm(t(`Tirar "${b.titulo}" da biblioteca? Os agentes deixam de ver.`, `Remove "${b.titulo}" from the library? Agents will no longer see it.`))) return;
     const { data: path, error } = await sb.rpc("apagar_biblioteca", { item: b.id });
-    if (error) return alert(msgErro(error));
+    if (error) return recado(msgErro(error));
     if (path && (path as string).split("/")[1] === eu) sb.storage.from("arquivos").remove([path as string]).then(() => {});
     setItens((xs) => xs?.filter((x) => x.id !== b.id) ?? xs);
   };
@@ -156,7 +156,7 @@ export function Biblioteca({ salaId, eu, podeEscrever, nome, fechar, abrirMemori
                       { rotulo: t("Abrir", "Open"), acao: () => abrir(b) },
                       b.tipo === "link" && { rotulo: t("Copiar link", "Copy link"), acao: () => copiarTexto(b.url!) },
                       podeEscrever && { rotulo: t("Editar título e nota", "Edit title and note"), acao: () => { setEditando(b.id); setNovo(false); } },
-                      podeEscrever && { rotulo: t("Tirar da biblioteca", "Remove from library"), acao: () => tirar(b), perigo: true },
+                      podeEscrever && { rotulo: t("Tirar da biblioteca", "Remove from library"), acao: () => tirar(b), perigo: true, confirmar: t("Os agentes deixam de ver este item.", "Agents will no longer see this item.") },
                     ]} />
                   </>
                 )}
@@ -243,7 +243,7 @@ function Edicao({ item, pronto }: { item: ItemBiblioteca; pronto: () => void }) 
       e.preventDefault(); setIndo(true);
       const { error } = await sb.rpc("editar_biblioteca", { item: item.id, titulo: titulo.trim(), nota });
       setIndo(false);
-      if (error) return alert(msgErro(error));
+      if (error) return recado(msgErro(error));
       pronto();
     }} onKeyDown={(e) => e.key === "Escape" && pronto()}>
       <input autoFocus maxLength={200} value={titulo} onChange={(e) => setTitulo(e.target.value)} aria-label={t("Título", "Title")} />

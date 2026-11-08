@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { sb } from "../supabase";
 import { IconeFechar, IconeLapis, IconeMemoria, IconeVoltar } from "./Icones";
 import { Menu } from "./Menu";
+import { BotaoConfirmar } from "./Confirmar";
+import { recado } from "./Recados";
 import { Texto } from "./Texto";
 import { erro as msgErro, locale, t } from "../i18n";
 
@@ -56,7 +58,7 @@ export function Memoria({ salaId, eu, podeEscrever, nome, fechar, voltar }: Prop
     setIndo(true);
     const { error } = await sb.rpc("salvar_memoria", { sala: salaId, texto: novo, resumo: r });
     setIndo(false);
-    if (error) { alert(msgErro(error)); return false; }
+    if (error) { recado(msgErro(error)); return false; }
     setTexto(novo.trim());
     return true;
   };
@@ -69,7 +71,6 @@ export function Memoria({ salaId, eu, podeEscrever, nome, fechar, voltar }: Prop
   const restaurar = async (v: Versao) => {
     const { data } = await sb.from("memoria_versoes").select("texto").eq("id", v.id).single();
     if (!data) return;
-    if (!confirm(t("Voltar a memória para esta versão? A atual continua no histórico.", "Restore this version of the memory? The current version stays in the history."))) return;
     if (await salvar((data as { texto: string }).texto, t(`Voltou para a versão de ${quando(v.criada_em)}`, `Restored the version from ${quando(v.criada_em)}`))) setVendo(null);
   };
 
@@ -120,7 +121,7 @@ export function Memoria({ salaId, eu, podeEscrever, nome, fechar, voltar }: Prop
             <span className="pilula pilula-acento">{t("Versão anterior", "Earlier version")}</span>
             <span className="painel-topo-acoes">
               <button className="btn btn-pequeno btn-texto" onClick={() => setVendo(null)}>{t("Ver a atual", "View current")}</button>
-              {podeEscrever && <button className="btn btn-pequeno" onClick={() => restaurar(versoes.find((v) => v.id === vendo.id)!)}>{t("Voltar para esta", "Restore this version")}</button>}
+              {podeEscrever && <BotaoConfirmar className="btn btn-pequeno" rotulo={t("Voltar para esta", "Restore this version")} aviso={t("A memória volta para esta versão. A atual continua no histórico.", "The memory goes back to this version. The current one stays in the history.")} onConfirmar={() => restaurar(versoes.find((v) => v.id === vendo.id)!)} />}
             </span>
           </div>
           <Texto texto={vendo.texto} chamaMim={sempre} />
@@ -151,7 +152,7 @@ export function Memoria({ salaId, eu, podeEscrever, nome, fechar, voltar }: Prop
                   {i > 0 && (
                     <Menu rotulo={t("Ações da versão", "Version actions")} itens={[
                       { rotulo: t("Ver esta versão", "View this version"), acao: () => ver(v) },
-                      podeEscrever && { rotulo: t("Voltar para esta", "Restore this version"), acao: () => restaurar(v) },
+                      podeEscrever && { rotulo: t("Voltar para esta", "Restore this version"), acao: () => restaurar(v), confirmar: t("A memória volta para esta versão. A atual continua no histórico.", "The memory goes back to this version. The current one stays in the history.") },
                     ]} />
                   )}
                 </li>

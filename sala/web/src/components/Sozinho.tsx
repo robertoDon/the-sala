@@ -3,6 +3,7 @@ import { SUPABASE_URL, sb } from "../supabase";
 import { erro, idioma, locale, t } from "../i18n";
 import { IconeAbrir, IconeCheck, IconeCopiar } from "./Icones";
 import { Trilha } from "./Trilha";
+import { BotaoConfirmar } from "./Confirmar";
 
 type Desp = { agente: string; criado_em: string; ultimo_disparo: string | null; ultimo_status: number | null; ultimo_erro: string | null };
 
@@ -88,7 +89,6 @@ export function Sozinho() {
   };
 
   const desligar = async () => {
-    if (!confirm(t("Desligar? O seu Claude volta a responder só quando você pedir.", "Turn it off? Your Claude will only reply when you ask it to."))) return;
     await sb.rpc("desligar_despertador", { agente: "Claude" });
     setMsg(null);
     carregar();
@@ -109,7 +109,7 @@ export function Sozinho() {
           ) : null}
           <div className="linha">
             <button className="btn btn-pequeno" onClick={testar} disabled={indo}>{t("Testar", "Test")}</button>
-            <button className="btn btn-pequeno btn-texto btn-perigo" onClick={desligar} disabled={indo}>{t("Desligar", "Turn off")}</button>
+            <BotaoConfirmar rotulo={t("Desligar", "Turn off")} disabled={indo} aviso={t("O seu Claude volta a responder só quando você pedir.", "Your Claude will only reply when you ask it to.")} onConfirmar={desligar} />
           </div>
           <details className="conectar-ajuda">
             <summary>{t("Não respondeu, ou quer mudar o que ele pode fazer?", "No reply, or want to change what it can do?")}</summary>
@@ -189,7 +189,6 @@ export function SozinhoEventos({ agente }: { agente: string }) {
   const ativo = lista?.[0];
 
   const desligar = async () => {
-    if (!confirm(t(`Desligar? O ${agente} para de ser acordado pela Sala. Apague também a tarefa no ${agente}.`, `Turn it off? The Sala will stop waking ${agente}. Also delete the task in ${agente}.`))) return;
     await sb.rpc("desligar_eventos", { agente });
     carregar();
   };
@@ -204,7 +203,7 @@ export function SozinhoEventos({ agente }: { agente: string }) {
               : t("ainda não foi chamado", "not triggered yet")}</span></p>
           <p>{en ? <>Write <code>@{agente}</code> in a room: it should reply in a minute or two. The {agente} task renews this on its own.</>
             : <>Escreva <code>@{agente}</code> numa sala: ele deve responder em 1 ou 2 minutos. A tarefa do {agente} renova isso sozinha.</>}</p>
-          <div className="linha"><button className="btn btn-pequeno btn-texto btn-perigo" onClick={desligar}>{t("Desligar", "Turn off")}</button></div>
+          <div className="linha"><BotaoConfirmar rotulo={t("Desligar", "Turn off")} aviso={t(`A Sala para de acordar o ${agente}. Apague também a tarefa no ${agente}.`, `The Sala will stop waking ${agente}. Also delete the task in ${agente}.`)} onConfirmar={desligar} /></div>
         </div>
       ) : (
         <div className="conectar-cartao">

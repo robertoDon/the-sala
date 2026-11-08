@@ -1,4 +1,5 @@
 import { Dicas } from "./components/Dicas";
+import { Recados } from "./components/Recados";
 import { createContext, Fragment, useContext, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Dicas />
+      <Recados />
       </Fragment>
     </AuthCtx.Provider>
   );

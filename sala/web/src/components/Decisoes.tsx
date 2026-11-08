@@ -4,6 +4,7 @@ import { IconeCheck, IconeDecisao, IconeDocumento, IconeFechar, IconeProposta, I
 import { Texto } from "./Texto";
 import { LinhaAprovacao, type Aprovacao } from "./Bolha";
 import { erro as msgErro, locale, t } from "../i18n";
+import { recado } from "./Recados";
 
 type Props = {
   salaId: string;
@@ -57,11 +58,11 @@ export function Decisoes({ salaId, salaNome, versao, autor, nome, decidir, aprov
   };
 
   const agir = async (id: number, aprovar: boolean | "ajuste", nota?: string) => {
-    if (aprovar === "ajuste" && !nota) return alert(t("Diga o que precisa mudar.", "Describe what needs to change."));
+    if (aprovar === "ajuste" && !nota) return recado(t("Diga o que precisa mudar.", "Describe what needs to change."));
     setOcupado(id);
     const erro = await decidir(id, aprovar, nota);
     setOcupado(null);
-    if (erro) alert(msgErro(erro));
+    if (erro) recado(msgErro(erro));
     else setRecusando(null);
   };
 

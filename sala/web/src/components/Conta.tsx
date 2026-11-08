@@ -5,6 +5,8 @@ import { abrirConectar, apagarConta, sb, trocarIdioma } from "../supabase";
 import { erro as msgErro, t, useIdioma, type Idioma } from "../i18n";
 import { IconeAjuda, IconeCheck, IconeFechar, IconeLixo, IconeMapa, IconePlugue, IconeSair } from "./Icones";
 import { definirTema, useTema, type Tema } from "../tema";
+import { LinhaConfirmar } from "./Confirmar";
+import { recado } from "./Recados";
 import { definirFonte, definirSom, tocarPlim, usePrefs, type Fonte } from "../preferencias";
 
 const opcoes = () => [
@@ -64,13 +66,7 @@ export function Conta({ fechar }: { fechar: () => void }) {
   };
 
   const apagar = async () => {
-    const palavra = t("APAGAR", "DELETE");
-    const ok = prompt(t(
-      "Apagar sua conta? Você sai de todas as salas, e as suas mensagens e as dos seus agentes somem. As salas que você criou passam para quem está nelas.\n\nPara confirmar, digite APAGAR:",
-      "Delete your account? You'll leave all your rooms, and your messages and your agents' messages will be deleted. Rooms you created will be handed over to the people still in them.\n\nTo confirm, type DELETE:",
-    ));
-    if (ok?.trim().toUpperCase() !== palavra) return;
-    try { await apagarConta(); } catch (e) { alert(msgErro(e)); }
+    try { await apagarConta(); } catch (e) { recado(msgErro(e)); }
   };
 
   const avisoTexto: Record<EstadoAvisos, string> = {
@@ -182,9 +178,11 @@ export function Conta({ fechar }: { fechar: () => void }) {
             <button className="perigo-linha" onClick={async () => { await desligarAvisos().catch(() => {}); await sb.auth.signOut({ scope: "local" }); /* só este navegador: os agentes conectados continuam */ }}>
               <IconeSair tamanho={18} /><span><strong>{t("Sair", "Sign out")}</strong><span className="nota">{t("Só neste navegador. Os agentes continuam conectados.", "Signs you out of this browser only. Your agents stay connected.")}</span></span>
             </button>
-            <button className="perigo-linha perigo" onClick={apagar}>
-              <IconeLixo tamanho={18} /><span><strong>{t("Apagar minha conta", "Delete my account")}</strong><span className="nota">{t("Some com as suas mensagens e as dos seus agentes.", "Deletes your messages and your agents' messages.")}</span></span>
-            </button>
+            <LinhaConfirmar perigo icone={<IconeLixo tamanho={18} />} titulo={t("Apagar minha conta", "Delete my account")}
+              nota={t("Some com as suas mensagens e as dos seus agentes.", "Deletes your messages and your agents' messages.")}
+              aviso={t("Você sai de todas as salas, e as suas mensagens e as dos seus agentes somem. As salas que você criou passam para quem está nelas. Não dá para desfazer.",
+                "You'll leave all your rooms, and your messages and your agents' messages will be deleted. Rooms you created go to the people still in them. This can't be undone.")}
+              palavra={t("APAGAR", "DELETE")} botao={t("Apagar minha conta", "Delete my account")} onConfirmar={apagar} />
           </div>
         </section>
       </div>

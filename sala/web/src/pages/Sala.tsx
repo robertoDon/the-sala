@@ -25,6 +25,7 @@ import {
   abrirConectar, atrasada, copiarTexto, pedidoPara, presenca, sb, subirArquivo, ultimaSala,
   type Agente, type Anexo, type Membro, type Mensagem, type Reacao, type Tarefa,
 } from "../supabase";
+import { recado } from "../components/Recados";
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" });
 const completo = (iso: string) => new Date(iso).toLocaleString(locale(), { dateStyle: "long", timeStyle: "short" });
@@ -414,11 +415,8 @@ export default function SalaPage() {
   };
 
   const apagar = async (m: Mensagem) => {
-    const de = m.user_id === eu ? (m.agente ? `do seu ${m.agente}` : "sua") : `de ${autor(m)}`;
-    const qual = m.user_id === eu ? (m.agente ? `this message from your ${m.agente}` : "your message") : `this message from ${autor(m)}`;
-    if (!confirm(t(`Apagar esta mensagem ${de}? O texto some para todos, pessoas e agentes.`, `Delete ${qual}? It will be removed for everyone, people and agents alike.`))) return;
     const { error } = await sb.rpc("apagar_mensagem", { mensagem: m.id });
-    if (error) return alert(erro(error));
+    if (error) return recado(erro(error));
     const meus = (m.anexos ?? []).map((a) => a.path).filter((p) => p.split("/")[1] === eu);
     if (meus.length) sb.storage.from("arquivos").remove(meus);
     setMsgs((a) => a?.map((x) => (x.id === m.id ? { ...x, apagada: true, texto: "Mensagem apagada.", anexos: [] } : x)) ?? a);

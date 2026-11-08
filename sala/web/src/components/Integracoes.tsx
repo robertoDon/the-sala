@@ -3,6 +3,7 @@ import { sb } from "../supabase";
 import { IconeCheck } from "./Icones";
 import { Menu } from "./Menu";
 import { erro as msgErro, idioma, t } from "../i18n";
+import { recado } from "./Recados";
 
 type Integracao = { id: number; url: string; eventos: string[]; criada_em: string };
 
@@ -47,14 +48,13 @@ export function Integracoes({ salaId }: { salaId: string }) {
 
   const testar = async (i: Integracao) => {
     const { error } = await sb.rpc("testar_integracao", { integracao: i.id });
-    if (error) return alert(msgErro(error));
+    if (error) return recado(msgErro(error));
     setTestado(i.id); setTimeout(() => setTestado(null), 2500);
   };
 
   const apagar = async (i: Integracao) => {
-    if (!confirm(t(`Desligar a integração com ${servico(i.url)}?`, `Remove the ${servico(i.url)} integration?`))) return;
     const { error } = await sb.rpc("apagar_integracao", { integracao: i.id });
-    if (error) alert(msgErro(error));
+    if (error) recado(msgErro(error));
     carregar();
   };
 
@@ -77,7 +77,7 @@ export function Integracoes({ salaId }: { salaId: string }) {
               {testado === i.id && <span className="salvo" role="status"><IconeCheck tamanho={12} /> {t("Enviado", "Sent")}</span>}
               <Menu rotulo={t(`Ações da integração ${servico(i.url)}`, `Actions for ${servico(i.url)}`)} itens={[
                 { rotulo: t("Mandar um teste", "Send test message"), acao: () => testar(i) },
-                { rotulo: t("Desligar", "Remove"), acao: () => apagar(i), perigo: true },
+                { rotulo: t("Desligar", "Remove"), acao: () => apagar(i), perigo: true, confirmar: t(`${servico(i.url)} para de receber os avisos desta sala.`, `${servico(i.url)} will stop getting this room's notifications.`) },
               ]} />
             </li>
           ))}

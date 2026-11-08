@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { sb, type Mensagem, type Tarefa } from "../supabase";
 import { IconeFechar } from "./Icones";
 import { gravado, idioma, locale, t } from "../i18n";
+import { recado } from "./Recados";
 
 type Props = { salaId: string; salaNome: string; autor: (m: Mensagem) => string; nome: (uid: string | null) => string; fechar: () => void };
 
@@ -125,7 +126,7 @@ p{margin:0 0 8px}.item{padding-left:4px}.sub{padding-left:24px;color:#5F5F66}@me
     setIndo(true);
     const d = await juntar();
     setIndo(false);
-    if (!janela) return alert(t("O navegador bloqueou a nova janela. Libere janelas para esta página e tente de novo.", "Your browser blocked the new window. Allow pop-ups for this page and try again."));
+    if (!janela) return recado(t("O navegador bloqueou a nova janela. Libere janelas para esta página e tente de novo.", "Your browser blocked the new window. Allow pop-ups for this page and try again."));
     janela.document.write(html(d));
     janela.document.close();
     janela.focus();

@@ -20,3 +20,4 @@
 - `styles.css` é uma camada só, organizada por seção: mudar o estilo de algo é editar a regra dele, não acrescentar uma sobrescrita no fim.
 - Minimalista e com cara própria: referências servem de inspiração, não de molde. O produto real (componentes do app) é o que aparece nas vitrines.
 - Textos sem gênero ao falar com a pessoa ("Boas-vindas", "Te chamaram").
+- Nada de janela do navegador (`confirm`, `prompt`, `alert`). Confirmar é no próprio app: `BotaoConfirmar` (o botão vira "Confirmar" com um balão dizendo o que acontece), `confirmar` no item do `Menu`, ou `LinhaConfirmar` para sair e apagar (com palavra a digitar quando apaga tudo). Erro ou aviso curto é `recado()`.

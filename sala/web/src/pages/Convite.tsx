@@ -7,6 +7,7 @@ import { corDaSala } from "../components/Layout";
 import { erro, t } from "../i18n";
 import "../landing.css";
 import { TrocarTema } from "./Landing";
+import { recado } from "../components/Recados";
 
 type Info = { sala_id: string; nome: string; pessoas: number; ja_membro: boolean; leitura: boolean };
 
@@ -28,7 +29,7 @@ export default function Convite() {
   const entrar = async () => {
     setEntrando(true);
     const { data, error } = await sb.rpc("entrar_sala", { codigo });
-    if (error) { setEntrando(false); return alert(erro(error)); }
+    if (error) { setEntrando(false); return recado(erro(error)); }
     nav(`/s/${data}`);
   };
 

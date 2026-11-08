@@ -4,6 +4,8 @@ import { abrirConectar, copiarTexto, sb, type Membro, type Sala } from "../supab
 import type { AgenteSala } from "../pages/Sala";
 import { IconeAgente, IconeCheck, IconeFechar, IconeVoltar } from "./Icones";
 import { Menu } from "./Menu";
+import { BotaoConfirmar, LinhaConfirmar } from "./Confirmar";
+import { recado } from "./Recados";
 import { Integracoes } from "./Integracoes";
 import { erro, gravado, locale, t } from "../i18n";
 
@@ -25,13 +27,13 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
   const mudarAprovacoes = async (n: number) => {
     const antes = aprovacoes; setAprovacoes(n);
     const { error } = await sb.from("salas").update({ aprovacoes: n }).eq("id", sala.id);
-    if (error) { setAprovacoes(antes); return alert(erro(error)); }
+    if (error) { setAprovacoes(antes); return recado(erro(error)); }
     setSalvo("aprovacoes"); setTimeout(() => setSalvo(""), 2000);
   };
   const mudarIdioma = async (i: "pt" | "en") => {
     if ((sala.idioma ?? "pt") === i) return;
     const { error } = await sb.from("salas").update({ idioma: i }).eq("id", sala.id);
-    if (error) return alert(erro(error));
+    if (error) return recado(erro(error));
     setSalvo("idioma"); setTimeout(() => setSalvo(""), 2000);
     recarregar();
   };
@@ -50,52 +52,46 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
 
   const salvar = async (campos: Partial<Pick<Sala, "nome" | "contexto">>, rotulo: string) => {
     const { error } = await sb.from("salas").update(campos).eq("id", sala.id);
-    if (error) return alert(erro(error));
+    if (error) return recado(erro(error));
     setSalvo(rotulo); setTimeout(() => setSalvo(""), 2000);
     recarregar();
   };
 
   const trocarConvite = async () => {
-    if (!confirm(t("Trocar o link? O link antigo para de funcionar. Quem já está na sala continua.", "Replace the invite links? The old ones will stop working. People already in the room will stay."))) return;
     const { error } = await sb.rpc("trocar_convite", { sala: sala.id });
-    if (error) alert(erro(error));
+    if (error) recado(erro(error));
     recarregar();
   };
 
   const remover = async (m: Membro) => {
-    if (!confirm(t(`Tirar ${m.perfis?.nome} da sala? Os agentes dessa pessoa também saem.`, `Remove ${m.perfis?.nome} from the room? Their agents will be removed too.`))) return;
     await sb.from("membros").delete().eq("sala_id", sala.id).eq("user_id", m.user_id);
   };
 
   const mudarPapel = async (m: Membro, papel: "membro" | "leitor") => {
     const { error } = await sb.rpc("mudar_papel", { sala: sala.id, pessoa: m.user_id, papel });
-    if (error) alert(erro(error));
+    if (error) recado(erro(error));
   };
 
   const tornarDono = async (m: Membro) => {
-    if (!confirm(t(`${m.perfis?.nome} também passa a cuidar da sala: muda nome e instruções, convida, tira pessoas e pode apagar a sala.`, `${m.perfis?.nome} will also become a room owner: they can rename the room, edit its instructions, invite and remove people, and delete the room.`))) return;
     const { error } = await sb.rpc("tornar_dono", { sala: sala.id, pessoa: m.user_id });
-    if (error) alert(erro(error));
+    if (error) recado(erro(error));
   };
 
   const outrosDonos = membros.some((m) => m.user_id !== eu && m.papel === "dono");
+  const avisoSair = dono && !outrosDonos && membros.length > 1
+    ? t(`Como você cuida da sala, ${membros.find((m) => m.user_id !== eu)?.perfis?.nome ?? "a próxima pessoa"} passa a cuidar dela. Para voltar, você vai precisar de um convite.`,
+      `Since you're the room owner, ${membros.find((m) => m.user_id !== eu)?.perfis?.nome ?? "the next person"} will take over. You'll need an invite to come back.`)
+    : membros.length === 1 ? t(`Você é a única pessoa aqui: sair apaga a sala "${sala.nome}" e as mensagens dela.`, `You're the only person here: leaving deletes the room "${sala.nome}" and its messages.`)
+      : t("Para voltar, você vai precisar de um convite.", "You'll need an invite to come back.");
   const sair = async () => {
-    const aviso = dono && !outrosDonos && membros.length > 1
-      ? t(`Sair de "${sala.nome}"? Como você é quem cuida da sala, ${membros.find((m) => m.user_id !== eu)?.perfis?.nome ?? "a próxima pessoa"} passa a cuidar dela.`,
-        `Leave "${sala.nome}"? Since you're the room owner, ${membros.find((m) => m.user_id !== eu)?.perfis?.nome ?? "the next person"} will take over.`)
-      : membros.length === 1 ? t(`Você é a única pessoa aqui. Sair apaga a sala "${sala.nome}".`, `You're the only person here. Leaving deletes the room "${sala.nome}".`)
-        : t(`Sair de "${sala.nome}"? Para voltar, você vai precisar de um convite.`, `Leave "${sala.nome}"? You'll need an invite to come back.`);
-    if (!confirm(aviso)) return;
     const { error } = await sb.rpc("sair_da_sala", { sala: sala.id });
-    if (error) return alert(erro(error));
+    if (error) return recado(erro(error));
     recarregar(); nav("/");
   };
 
   const apagar = async () => {
-    if (prompt(t(`Apagar a sala "${sala.nome}" e todas as mensagens, para todos? Para confirmar, digite o nome da sala: ${sala.nome}`,
-      `Delete the room "${sala.nome}" and all its messages, for everyone? To confirm, type the room name: ${sala.nome}`))?.trim() !== sala.nome) return;
     const { error } = await sb.from("salas").delete().eq("id", sala.id);
-    if (error) return alert(erro(error));
+    if (error) return recado(erro(error));
     recarregar(); nav("/");
   };
 
@@ -182,8 +178,8 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
                 <Menu rotulo={t(`Ações para ${m.perfis?.nome}`, `Actions for ${m.perfis?.nome}`)} itens={[
                   m.papel === "leitor" ? { rotulo: t("Liberar para escrever", "Allow writing"), acao: () => mudarPapel(m, "membro") }
                     : { rotulo: t("Deixar só ler", "Make viewer"), acao: () => mudarPapel(m, "leitor") },
-                  m.papel !== "leitor" && { rotulo: t("Tornar dono", "Make room owner"), acao: () => tornarDono(m) },
-                  { rotulo: t("Tirar da sala", "Remove from room"), acao: () => remover(m), perigo: true },
+                  m.papel !== "leitor" && { rotulo: t("Tornar dono", "Make room owner"), acao: () => tornarDono(m), confirmar: t(`${m.perfis?.nome} também passa a cuidar da sala: muda nome e instruções, convida, tira pessoas e pode apagar a sala.`, `${m.perfis?.nome} will also become a room owner: they can rename the room, edit its instructions, invite and remove people, and delete the room.`) },
+                  { rotulo: t("Tirar da sala", "Remove from room"), acao: () => remover(m), perigo: true, confirmar: t("Os agentes dessa pessoa também saem.", "Their agents will be removed too.") },
                 ]} />
               ) : <span className="menu-vazio" aria-hidden />}
             </li>
@@ -216,7 +212,7 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
         <section className="painel-lista">
           <div className="secao-rotulo secao-rotulo-acao">
             <h3>{t("Convites", "Invites")}</h3>
-            {dono && <button className="link nota" onClick={trocarConvite}>{t("Trocar links", "Replace links")}</button>}
+            {dono && <BotaoConfirmar className="link nota" rotulo={t("Trocar links", "Replace links")} aviso={t("Os links antigos param de funcionar. Quem já está na sala continua.", "The old links stop working. People already in the room stay.")} onConfirmar={trocarConvite} />}
           </div>
           <div className="convites">
             <Convite titulo={t("Participar", "Member")} texto={t("Escreve, decide e traz os próprios agentes.", "Can write, decide and bring their own agents.")} link={link} />
@@ -246,13 +242,12 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
       <section className="painel-lista painel-fim">
         <h3 className="secao-rotulo">{t("Sair", "Leave")}</h3>
         <div className="perigo-linhas">
-          <button className="perigo-linha" onClick={sair}>
-            <span><strong>{t("Sair da sala", "Leave room")}</strong><span className="nota">{t("Para voltar, precisa de um convite.", "You'll need an invite to come back.")}</span></span>
-          </button>
+          <LinhaConfirmar titulo={t("Sair da sala", "Leave room")} nota={t("Para voltar, precisa de um convite.", "You'll need an invite to come back.")}
+            aviso={avisoSair} botao={membros.length === 1 ? t("Sair e apagar", "Leave and delete") : t("Sair da sala", "Leave room")} onConfirmar={sair} />
           {dono && (
-            <button className="perigo-linha perigo" onClick={apagar}>
-              <span><strong>{t("Apagar a sala", "Delete room")}</strong><span className="nota">{t("Some para todos, com todas as mensagens.", "Deletes it for everyone, along with all messages.")}</span></span>
-            </button>
+            <LinhaConfirmar perigo titulo={t("Apagar a sala", "Delete room")} nota={t("Some para todos, com todas as mensagens.", "Deletes it for everyone, along with all messages.")}
+              aviso={t("A sala e todas as mensagens somem para todos, pessoas e agentes. Não dá para desfazer.", "The room and all its messages are deleted for everyone, people and agents. This can't be undone.")}
+              palavra={sala.nome} botao={t("Apagar a sala", "Delete room")} onConfirmar={apagar} />
           )}
         </div>
       </section>

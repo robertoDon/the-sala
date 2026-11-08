@@ -5,6 +5,7 @@ import { IconeAgente, IconeChave, IconeFechar, IconeMais, IconePlugue, IconeRelo
 import { Sozinho, SozinhoEventos } from "./Sozinho";
 import { BotaoCopiar, Copiavel, Trilha } from "./Trilha";
 import { erro, idioma, locale, t } from "../i18n";
+import { recado } from "./Recados";
 
 type Aba = "claude" | "chatgpt" | "gemini" | "code" | "outro";
 type Chave = { id: string; agente: string; final: string; criada_em: string; usada_em: string | null };
@@ -82,7 +83,7 @@ export function Conectar({ fechar }: { fechar: () => void }) {
 
   const criarChave = async (agente: string) => {
     const { data, error } = await sb.rpc("criar_chave", { agente });
-    if (error) return alert(erro(error));
+    if (error) return recado(erro(error));
     setNova({ agente, chave: data as string });
     carregar();
   };

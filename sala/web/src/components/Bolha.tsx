@@ -4,6 +4,7 @@ import { IconeAgente, IconeJoinha, IconeReagir, IconeCopiar, IconeCheck, IconeDe
 import { Texto } from "./Texto";
 import { Anexos } from "./Anexos";
 import { naConversa, locale, t as tr } from "../i18n";
+import { BotaoConfirmar } from "./Confirmar";
 
 export type Citacao = { id: number; autor: string; texto: string } | null;
 export type GrupoReacao = { emoji: string; quem: string[]; minha: boolean };
@@ -296,7 +297,7 @@ export function Bolha(p: Props) {
             )}
             {p.virarTarefa && <button type="button" className="btn-acao" onClick={p.virarTarefa} title={tr("Virar tarefa", "Turn into a task")} aria-label={tr("Virar tarefa", "Turn into a task")}><IconeTarefa tamanho={16} /></button>}
             {p.editar && <button type="button" className="btn-acao" onClick={() => { setRascunho(m.texto); setEditando(true); }} title={tr("Editar", "Edit")} aria-label={tr("Editar", "Edit")}><IconeLapis tamanho={16} /></button>}
-            {p.apagar && <button type="button" className="btn-acao" onClick={p.apagar} title={tr("Apagar", "Delete")} aria-label={tr("Apagar", "Delete")}><IconeLixo tamanho={16} /></button>}
+            {p.apagar && <BotaoConfirmar className="btn-acao" titulo={tr("Apagar", "Delete")} confirmar={tr("Apagar", "Delete")} aviso={tr("O texto some para todos, pessoas e agentes.", "It will be removed for everyone, people and agents alike.")} onConfirmar={p.apagar}><IconeLixo tamanho={16} /></BotaoConfirmar>}
           </div>
         )}
       </div>

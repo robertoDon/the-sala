@@ -186,6 +186,27 @@ a.btn { text-decoration: none; }
 }
 .menu button:hover, .menu button:focus-visible { background: var(--hover); outline: none; }
 .menu button.perigo { color: var(--erro); }
+/* item que pede confirmação: o primeiro clique arma, com o que vai acontecer embaixo */
+.menu-confirmar { display: flex; flex-direction: column; }
+.menu button.armado, .menu button.armado:hover, .menu button.armado:focus-visible { background: #C2312A; color: #fff; }
+.menu-aviso { max-width: 240px; padding: 6px 10px 4px; font-size: 12.5px; line-height: 1.45; color: var(--cinza); white-space: normal; }
+
+/* confirmação de botão: balão preso a ele dizendo o que vai acontecer */
+.confirmar-balao {
+  position: fixed; z-index: 60; padding: 8px 12px; border-radius: var(--r2); background: var(--elevado); border: 1px solid var(--linha);
+  box-shadow: var(--sombra-alta); font-size: 13px; line-height: 1.45; color: var(--tinta); text-wrap: pretty; pointer-events: none;
+  animation: surge-menu var(--entra);
+}
+.confirmar-armado { white-space: nowrap; }
+.btn-acao.confirmar-armado, .msg-acoes .confirmar-armado { width: auto; min-height: 30px; height: 30px; padding: 0 10px; }
+
+/* recados: erro ou aviso curto no alto da tela, no lugar do alert() */
+.recados { position: fixed; z-index: 70; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(440px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.recado {
+  display: flex; align-items: center; gap: 8px; padding: 8px 6px 8px 14px; border-radius: var(--r2); background: var(--elevado); border: 1px solid var(--linha);
+  box-shadow: var(--sombra-alta); font-size: 13.5px; line-height: 1.45; pointer-events: auto; animation: surge-menu var(--entra);
+}
+.recado > span { flex: 1; min-width: 0; }
 
 .link { background: none; border: 0; padding: 0; color: var(--tinta); cursor: pointer; font-size: inherit; text-decoration: underline;
   text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); transition: text-decoration-color var(--rapido); }
@@ -908,6 +929,17 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 .perigo-linha:hover { background: var(--hover); }
 .perigo-linha.perigo strong, .perigo-linha.perigo > svg { color: var(--erro); }
 .perigo-linha.perigo:hover { background: color-mix(in srgb, var(--erro) 7%, transparent); }
+/* a linha aberta: o que vai acontecer, Cancelar e o botão vermelho (com a palavra a digitar, quando apaga tudo) */
+.perigo-confirmar {
+  display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--r2);
+  background: color-mix(in srgb, var(--erro) 6%, var(--elevado)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--erro) 22%, transparent);
+  animation: surge-menu var(--entra);
+}
+.perigo-confirmar strong { font-weight: 600; }
+.perigo-confirmar .nota { line-height: 1.5; text-wrap: pretty; }
+.perigo-confirmar .campo { display: flex; flex-direction: column; gap: 6px; }
+.perigo-confirmar input { width: 100%; }
+.perigo-confirmar-acoes { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* integrações e histórico */
 .integracao-form { padding: 12px; margin: 0 0 8px; border: 1px solid var(--linha); border-radius: 12px; background: var(--elevado); box-shadow: var(--sombra); }

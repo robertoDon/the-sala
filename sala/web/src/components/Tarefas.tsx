@@ -4,6 +4,7 @@ import type { AgenteSala } from "../pages/Sala";
 import { IconeAgente, IconeFechar, IconeMais, IconeRelogio, IconeVoltar, Marcador } from "./Icones";
 import { Menu } from "./Menu";
 import { erro as msgErro, locale, t } from "../i18n";
+import { recado } from "./Recados";
 
 export type RascunhoTarefa = { titulo: string; origem: number | null; responsavel: string; prazo?: string } | null;
 
@@ -184,13 +185,13 @@ export function Tarefas({ salaId, salaNome, tarefas, membros, agentes, eu, nome,
       new Promise((r) => setTimeout(r, 520)),
     ]);
     setMarcando((s) => { const n = new Set(s); n.delete(tf.id); return n; });
-    if (error) return alert(msgErro(error));
+    if (error) return recado(msgErro(error));
     setDesfazer(tf);
   };
 
   const concluir = async (tf: Tarefa) => {
     const { error } = await sb.rpc("concluir_tarefa", { tarefa: tf.id, resultado: resultado.trim() || null });
-    if (error) return alert(msgErro(error));
+    if (error) return recado(msgErro(error));
     setConcluindo(null); setResultado(""); setDesfazer(tf);
   };
 
@@ -202,15 +203,14 @@ export function Tarefas({ salaId, salaNome, tarefas, membros, agentes, eu, nome,
   };
 
   const cancelarTarefa = async (tf: Tarefa) => {
-    if (!confirm(t(`Cancelar a tarefa "${tf.titulo}"? Ela sai da lista.`, `Cancel the task "${tf.titulo}"? It will be removed from the list.`))) return;
     const { error } = await sb.rpc("editar_tarefa", { tarefa: tf.id, titulo: tf.titulo, responsavel: tf.responsavel, responsavel_agente: tf.responsavel_agente, prazo: tf.prazo, estado: "cancelada" });
-    if (error) alert(msgErro(error));
+    if (error) recado(msgErro(error));
   };
 
   const reabrir = async (tf: Tarefa) => {
     setDesfazer(null);
     const { error } = await sb.rpc("editar_tarefa", { tarefa: tf.id, titulo: tf.titulo, responsavel: tf.responsavel, responsavel_agente: tf.responsavel_agente, prazo: tf.prazo, estado: "aberta", reabrir: true });
-    if (error) alert(msgErro(error));
+    if (error) recado(msgErro(error));
   };
 
   return (
@@ -230,7 +230,7 @@ export function Tarefas({ salaId, salaNome, tarefas, membros, agentes, eu, nome,
           if (!titulo) return;
           setRapida("");
           const r = await criar(titulo, valorResp(eu, null), "", "");
-          if (r) { setRapida(titulo); alert(r); }
+          if (r) { setRapida(titulo); recado(r); }
         }}>
           <IconeMais tamanho={16} />
           <label className="sr" htmlFor="tarefa-rapida">{t("Adicionar tarefa", "Add a task")}</label>
@@ -309,7 +309,7 @@ export function Tarefas({ salaId, salaNome, tarefas, membros, agentes, eu, nome,
                         ...meusAgentes.map((a) => ({ rotulo: t(`Pedir ao ${a.nome}`, `Ask ${a.nome}`), acao: () => pedirAoAgente(tf, a.nome) })),
                         { rotulo: t("Concluir com resultado…", "Complete with result…"), acao: () => { setConcluindo(tf.id); setResultado(""); setEditando(null); } },
                         { rotulo: t("Editar", "Edit"), acao: () => { setEditando(tf.id); setNova(false); setConcluindo(null); } },
-                        { rotulo: t("Cancelar tarefa", "Cancel task"), acao: () => cancelarTarefa(tf), perigo: true },
+                        { rotulo: t("Cancelar tarefa", "Cancel task"), acao: () => cancelarTarefa(tf), perigo: true, confirmar: t("Ela sai da lista.", "It will be removed from the list.") },
                       ]} />
                     </>
                   )}
