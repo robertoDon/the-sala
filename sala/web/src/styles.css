@@ -497,9 +497,10 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 
 /* mensagem na fila: espera o agente terminar de ler a sala */
 .msg-na-fila .msg-corpo { opacity: .65; border-style: dashed; }
-.msg-fila { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; margin-top: 2px; font-size: 12px; color: var(--cinza); }
+/* o ponto anda junto com o texto; quebrando, o texto alinha à direita e o "Mandar agora" desce */
+.msg-fila { display: flex; align-items: baseline; justify-content: flex-end; flex-wrap: wrap; gap: 2px 8px; margin-top: 2px; font-size: 12px; color: var(--cinza); text-align: right; }
 .msg-fila .link { font-size: inherit; color: var(--tinta); font-weight: 500; }
-.msg-fila-ponto { width: 7px; height: 7px; border-radius: 999px; border: 1.5px solid currentColor; animation: respira 1.6s ease-in-out infinite; }
+.msg-fila-ponto { display: inline-block; vertical-align: 0; margin-right: 6px; width: 7px; height: 7px; border-radius: 999px; border: 1.5px solid currentColor; animation: respira 1.6s ease-in-out infinite; }
 
 /* minimapa de conversa longa: uma marca por mensagem na borda direita */
 .minimapa { position: absolute; top: 14px; bottom: 14px; right: 6px; width: 16px; z-index: 2; }

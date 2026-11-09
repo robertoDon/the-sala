@@ -325,7 +325,7 @@ export function Bolha(p: Props) {
       )}
       {m.fila && p.fila && (
         <p className="msg-fila" role="status">
-          <span className="msg-fila-ponto" aria-hidden />{tr(`Na fila: sai quando ${p.fila.ate} terminar de ler a sala.`, `Queued: it goes out once ${p.fila.ate} finishes reading the room.`)}
+          <span><span className="msg-fila-ponto" aria-hidden />{tr(`Na fila: sai quando ${p.fila.ate} terminar de ler a sala.`, `Queued: it goes out once ${p.fila.ate} finishes reading the room.`)}</span>
           <button type="button" className="link" onClick={p.fila.agora}>{tr("Mandar agora", "Send now")}</button>
         </p>
       )}
