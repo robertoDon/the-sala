@@ -89,6 +89,8 @@
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
+/* o Safari do iPhone aumenta sozinho a fonte de blocos largos (linha que não quebra) e o texto estoura a caixa */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--fundo); color: var(--tinta);
   font: 400 var(--t2)/1.55 var(--corpo); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
@@ -610,7 +612,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 .evento-aprovada .evento-icone { color: var(--ok); }
 .evento-recusada .evento-icone { color: var(--erro); }
 .evento-ajuste .evento-icone { color: var(--acento); }
-.evento-texto { min-width: 0; }
+.evento-texto { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .evento-nota { margin-left: 4px; color: var(--cinza); }
 .evento time { color: var(--cinza); flex: none; }
 /* o link quebra junto com o texto (botão é bloco em linha e descia inteiro, centralizado) */
@@ -618,7 +620,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 /* tarefa concluída por agente: uma linha, o resultado cortado abre ao tocar */
 .evento-tarefa .evento-icone { color: var(--ok); }
 .evento-resultado { display: block; margin: 2px 0 0; padding: 0; font: inherit; text-align: left; color: var(--cinza); background: none; border: 0; cursor: pointer;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60ch; }
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; max-width: min(60ch, 100%); }
 .evento-resultado.aberto { white-space: normal; }
 .evento-resultado:hover { color: var(--tinta); }
 
