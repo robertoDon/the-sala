@@ -596,7 +596,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 /* decisão vira um acontecimento na linha do tempo */
 .evento {
   display: flex; align-items: center; gap: 8px; margin: 12px auto; padding: 4px 14px 4px 10px; width: fit-content; max-width: 100%;
-  border: 1px solid var(--linha); border-radius: 999px; background: var(--elevado); box-shadow: var(--sombra); font-size: var(--t1);
+  border: 1px solid var(--linha); border-radius: 16px; background: var(--elevado); box-shadow: var(--sombra); font-size: var(--t1);
 }
 .evento-icone { display: grid; place-items: center; flex: none; }
 .evento-aprovada .evento-icone { color: var(--ok); }
@@ -605,7 +605,8 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 .evento-texto { min-width: 0; }
 .evento-nota { margin-left: 4px; color: var(--cinza); }
 .evento time { color: var(--cinza); flex: none; }
-.evento .link { font-size: inherit; }
+/* o link quebra junto com o texto (botão é bloco em linha e descia inteiro, centralizado) */
+.evento .link { font-size: inherit; display: inline; text-align: left; }
 
 /* respostas dos agentes a @agentes */
 .respostas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 4px; }

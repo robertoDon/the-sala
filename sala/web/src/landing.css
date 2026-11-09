@@ -29,7 +29,8 @@
 .lp-btn:active { transform: scale(.98); }
 .lp-btn-peq { height: 34px; padding: 0 12px; font-size: 13px; border-radius: 7px; }
 .lp-btn-grande { height: 48px; padding: 0 22px; font-size: 15px; border-radius: 10px; }
-.lp-btn-claro { background: var(--acento); color: var(--acento-tinta); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 1px 2px rgba(17,17,26,.18), 0 8px 24px -12px color-mix(in srgb, var(--acento) 70%, transparent); }
+/* sombra em degraus, curta: sem o halo roxo borrado embaixo do botão */
+.lp-btn-claro { background: var(--acento); color: var(--acento-tinta); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 1px 2px rgba(17,17,26,.18), 0 3px 6px -3px color-mix(in srgb, var(--acento) 45%, transparent); }
 .lp-btn-claro:hover { background: var(--acento-forte); }
 .lp-btn-fantasma { background: rgb(var(--lp-v) / .02); color: var(--tinta); border-color: var(--lp-borda-forte); }
 .lp-btn-fantasma:hover { background: rgb(var(--lp-v) / .06); border-color: rgb(var(--lp-v) / .22); }
@@ -215,25 +216,26 @@
   .lp-nav-dentro, .lp-abre, .lp-passos-min, .lp-fecha, .lp-agentes, .lp-bloco, .lp-confianca { padding-left: 16px; padding-right: 16px; }
   .lp-rodape-min { margin: 0 16px; }
   .lp-nav-dentro, .lp-nav-vidro .lp-nav-dentro { height: 60px; }
-  .lp-abre { padding-top: 20px; padding-bottom: 64px; gap: 36px; }
+  .lp-abre { padding-top: 20px; padding-bottom: 48px; gap: 36px; }
   .lp-h1 { font-size: 40px; }
   .lp-h2 { font-size: 30px; }
   .lp-sub { font-size: 16px; }
   .lp-ctas, .lp-ctas .lp-btn, .lp-fecha .lp-btn { width: 100%; }
   .lp-janela { grid-template-columns: 1fr; height: 500px; padding: 4px; border-radius: 18px; }
   .lp-janela-lateral, .lp-constelacao { display: none; }
-  .lp-agentes { padding-bottom: 64px; }
+  .lp-agentes { padding-bottom: 48px; }
+  .lp-bloco { padding-top: 40px; padding-bottom: 40px; gap: 28px; }
   .lp-agentes li { height: 34px; font-size: 13.5px; }
-  .lp-passos-min { padding-bottom: 72px; }
+  .lp-passos-min { padding-bottom: 32px; }
   .lp-passos-min ol { grid-template-columns: 1fr; gap: 0; }
   .lp-passos-min li { padding: 22px 0; border-top: 0; border-bottom: 1px solid var(--lp-borda); }
   .lp-secao-topo { margin-bottom: 28px; }
   .lp-bloco-vitrine { padding: 12px; border-radius: 18px; }
   .lp-cena { padding: 14px; }
   .lp-colunas { grid-template-columns: 1fr; }
-  .lp-confianca { padding-top: 56px; padding-bottom: 48px; }
+  .lp-confianca { padding-top: 48px; padding-bottom: 40px; }
   .lp-confianca-grade { grid-template-columns: 1fr; }
-  .lp-fecha { padding-top: 72px; padding-bottom: 96px; }
+  .lp-fecha { padding-top: 56px; padding-bottom: 72px; }
 }
 
 /* entrar: formulário à esquerda e o produto rodando à direita */
@@ -261,6 +263,8 @@
   .lp-entrar-vitrine { display: none; }
   .lp-entrar-lado { padding: 24px 16px; min-height: 100vh; min-height: 100dvh; }
 }
+/* celular estreito: o rodapé (links e tema) cabe numa linha */
+@media (max-width: 400px) { .lp-entrar-rodape { gap: 8px 14px; } }
 
 /* convite: um cartão só, no centro do palco */
 .lp-convite { display: grid; min-height: 100%; }
