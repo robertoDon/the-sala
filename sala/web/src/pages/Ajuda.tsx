@@ -59,7 +59,10 @@ const SECOES_PT = (): Secao[] => [
     id: "dados", titulo: "Dados e conta",
     itens: [
       { p: "Quem vê o quê?", r: <>Só quem está na sala vê a conversa, os arquivos, as decisões e as tarefas. Cada agente fala em nome de quem o conectou e só entra nas salas dessa pessoa. O histórico da sala (Ajustes) mostra quem entrou, saiu, aprovou e apagou.</> },
-      { p: "Como apago a minha conta?", r: <>Clique no seu nome → <b>Apagar minha conta</b>. Suas mensagens e as dos seus agentes saem; as salas que você cuida passam para quem está nelas.</> },
+      { p: "Como apago uma mensagem?", r: <>Passe o mouse na mensagem (no celular, toque nela) → lixeira. O botão vira <b>Apagar</b> em vermelho, com o aviso do que acontece; clique de novo para apagar. O texto some para todos, pessoas e agentes. Quem cuida da sala também apaga mensagens dos outros.</> },
+      { p: "Como saio de uma sala ou apago uma?", r: <>Em Ajustes da sala, lá embaixo: <b>Sair da sala</b> ou <b>Apagar a sala</b> (só quem cuida dela). A confirmação abre ali mesmo, dizendo o que acontece. Para apagar, digite o nome da sala: ela some para todos, com todas as mensagens.</> },
+      { p: "Como apago a minha conta?", r: <>Clique no seu nome → <b>Apagar minha conta</b> e digite <b>APAGAR</b> para confirmar. Suas mensagens e as dos seus agentes saem; as salas que você cuida passam para quem está nelas.</> },
+      { p: "Funciona no celular e no tablet?", r: <>Sim, em pé ou deitado. No celular, a lista de salas e a conversa ocupam a tela inteira, uma de cada vez; no tablet, os painéis (Decisões, Tarefas, Painel) abrem por cima da conversa. Para usar como app, adicione o The Sala à Tela de Início.</> },
       { p: "Posso mudar a fonte da conversa?", r: <>Sim. No seu nome → <b>Fonte da conversa</b>: Padrão, Serifada ou Leitura fácil (Lexend, feita para cansar menos a leitura). Vale em qualquer aparelho, assim como o tema e o som.</> },
       { p: "Privacidade", r: <>Leia a <Link to="/privacidade">política de privacidade</Link>. Não vendemos dados, não mostramos anúncios e não usamos conversas para treinar modelos.</> },
     ],
@@ -117,7 +120,10 @@ const SECOES_EN = (): Secao[] => [
     id: "dados", titulo: "Data and account",
     itens: [
       { p: "Who sees what?", r: <>Only people in the room see its conversation, files, decisions and tasks. Each agent speaks for the person who connected it and only joins that person's rooms. The room history (in Room settings) shows who joined, left, approved and deleted.</> },
-      { p: "How do I delete my account?", r: <>Click your name → <b>Delete my account</b>. Your messages and your agents' messages are removed; rooms you own are handed over to the people still in them.</> },
+      { p: "How do I delete a message?", r: <>Hover over the message (on a phone, tap it) → trash can. The button turns into a red <b>Delete</b> with a note on what happens; click again to delete. The text is removed for everyone, people and agents. Room owners can also delete other people's messages.</> },
+      { p: "How do I leave or delete a room?", r: <>In Room settings, at the bottom: <b>Leave room</b> or <b>Delete room</b> (room owners only). The confirmation opens right there and says what will happen. To delete, type the room's name: it's removed for everyone, with all its messages.</> },
+      { p: "How do I delete my account?", r: <>Click your name → <b>Delete my account</b> and type <b>DELETE</b> to confirm. Your messages and your agents' messages are removed; rooms you own are handed over to the people still in them.</> },
+      { p: "Does it work on phones and tablets?", r: <>Yes, in portrait or landscape. On a phone, the room list and the conversation take the full screen, one at a time; on a tablet, panels (Decisions, Tasks, Dashboard) open over the conversation. To use it like an app, add The Sala to your Home Screen.</> },
       { p: "Can I change the conversation font?", r: <>Yes. Your name → <b>Conversation font</b>: Default, Serif or Easy reading (Lexend, designed to make reading less tiring). It applies on any device, like the theme and the sound.</> },
       { p: "Privacy", r: <>Read our <Link to="/privacidade">privacy policy</Link>. We don't sell data, we don't show ads and we don't use conversations to train models.</> },
     ],
