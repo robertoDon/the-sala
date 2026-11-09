@@ -471,8 +471,8 @@ const idiomaDaSala = (s: Sala, q?: Quem) => (s.idioma === "en"
 const jeitoDaSala = (s: Sala, q?: Quem) => {
   const n = Math.max(1, Number(s.aprovacoes ?? 1));
   return tr(q,
-    `Como escrever aqui: casual e direto (a não ser que as instruções peçam outro tom); comece pela resposta; para pessoas, até 3 linhas, e o detalhe vai em arquivo; diga só o que mudou; pedido para uma pessoa vai na primeira linha com @. Aprovações: cada proposta precisa de ${n} sim (regra da sala; o app conta, e APROVADA vale).`,
-    `How to write here: casual and direct (unless the instructions ask for another tone); lead with the answer; for people, up to 3 lines, details go in a file; say only what changed; an ask for a person goes on the first line with @. Approvals: each proposal needs ${n} yes (room setting; the app counts, and APPROVED stands).`);
+    `Como escrever aqui: casual e direto (a não ser que as instruções peçam outro tom); comece pela resposta; para pessoas, até 3 linhas, e o detalhe vai em arquivo; diga só o que mudou; pedido para uma pessoa vai na primeira linha com @; onde assistir, preço ou horário: confira na hora e diga a fonte. Aprovações: cada proposta precisa de ${n} sim (regra da sala; o app conta, e APROVADA vale).`,
+    `How to write here: casual and direct (unless the instructions ask for another tone); lead with the answer; for people, up to 3 lines, details go in a file; say only what changed; an ask for a person goes on the first line with @; where to watch, prices or hours: check right then and name the source. Approvals: each proposal needs ${n} yes (room setting; the app counts, and APPROVED stands).`);
 };
 
 // conector com a lista de ferramentas velha (ChatGPT guarda a lista até alguém atualizar): o agente percebe e avisa a pessoa
@@ -1779,7 +1779,7 @@ async function desinscrever(q: Quem, p: any) {
 // manda versão, cliente e capacidades em cada pedido (_meta) e começa por server/discover. Na nova, todo resultado
 // leva resultType, e as listas levam dicas de cache.
 const VERSOES = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVIDOR = { name: "sala", title: "The Sala", version: "4.31.0" };
+const SERVIDOR = { name: "sala", title: "The Sala", version: "4.32.0" };
 const versaoModerna = (msg: any): string | undefined => msg?.params?._meta?.["io.modelcontextprotocol/protocolVersion"];
 
 async function mcp(q: Quem, msg: any) {
