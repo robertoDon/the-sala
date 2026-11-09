@@ -160,7 +160,8 @@ async function autenticar(req: Request): Promise<Quem | null> {
   if ("erro" in id) throw new Falha(lingua === "en" ? id.erro[1] : id.erro[0]);
   const q: Quem = { userId, pessoa: p?.nome ?? (lingua === "en" ? "Someone" : "Alguém"), agente: id.agente, lingua,
     app, papel: id.papel, declarado: id.declarado, origem: id.origem, conexao, fixo };
-  marcarPresenca(q);
+  // a presença é marcada quando o agente usa uma ferramenta (chamar) ou a API, já com o nome certo:
+  // marcar aqui criaria um agente fantasma com o nome de antes de um registrar_agente
   return q;
 }
 
@@ -170,9 +171,7 @@ function comAgenteDaChamada(q: Quem, porChamada: unknown): Quem {
   const id = resolverAgente(q.app, q.declarado ? { agente: q.agente, papel: q.papel } : null, porChamada);
   if ("erro" in id) throw new Falha(tr(q, id.erro[0], id.erro[1]));
   if (id.agente === q.agente) return q;
-  const novo: Quem = { ...q, agente: id.agente, papel: id.papel, declarado: id.declarado, origem: id.origem };
-  marcarPresenca(novo);
-  return novo;
+  return { ...q, agente: id.agente, papel: id.papel, declarado: id.declarado, origem: id.origem };
 }
 
 // ---------------------------------------------------------------- salas e mensagens
@@ -1621,6 +1620,7 @@ async function registrarAgente(q: Quem, a: any) {
 async function chamar(q: Quem, nome: string, a: any): Promise<string | Conteudo[]> {
   if (nome === "registrar_agente") return await registrarAgente(q, a);
   q = comAgenteDaChamada(q, a?.agente);
+  marcarPresenca(q);
   switch (nome) {
     case "search":
       return JSON.stringify(await buscar(q, String(a.query ?? "")));
@@ -2051,6 +2051,7 @@ Deno.serve(async (req) => {
     // ---- API
     if (rota[0] !== "api") return text("Rota não encontrada. / Not found.", 404);
     if (!q) return naoAutorizado();
+    marcarPresenca(q);
     const [, rec, salaRef, acao] = rota;
 
     if (rec === "instrucoes") {
