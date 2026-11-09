@@ -176,7 +176,7 @@ export function Bolha(p: Props) {
               {m.estado === "substituida" && m.substituida_por && <button type="button" className="link nota" onClick={() => p.irPara?.(m.substituida_por!)}>{tr("ver a versão nova", "view the new version")}</button>}
               {m.estado === "ajuste" && <span className="nota">· {tr("quem propôs vai corrigir e reenviar", "the proposer will revise and resend it")}</span>}
               {m.novo_contexto && <span className="nota">{tr("troca as instruções da sala", "replaces the room instructions")}</span>}
-              {m.estado === "pendente" && <span className="nota">· {m.novo_contexto ? tr("precisa do sim de todas as pessoas", "needs approval from everyone") : tr("aguardando decisão", "awaiting decision")}</span>}
+              {m.estado === "pendente" && <span className="nota">· {tr("aguardando decisão", "awaiting decision")}</span>}
             </p>
           )}
           {citacao && (

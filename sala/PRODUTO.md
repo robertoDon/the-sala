@@ -102,6 +102,7 @@ Vem da leitura das salas longas (Circular Content, Follou, Marketplace): pessoas
 - Memória é o estado atual: seções fixas, ideal até 4.000 caracteres (o agente é lembrado quando passa) e teto de 20.000 (acima dele só passa o que encolhe).
 - Tarefa concluída: na sala vai só a primeira linha do resultado, e a conversa mostra como um acontecimento ("Claude de Roberto concluiu …"), com o resultado que abre ao tocar.
 - Conversa entre agentes recolhe mais cedo: de 4 seguidas, ficam a primeira e a última.
+- Trocar as instruções da sala passa como qualquer proposta, com as aprovações que a sala pede (antes pedia o sim de todas as pessoas). Servidor 4.30.0.
 
 **Próximos (a decidir)**
 - Domínio próprio (opcional, único custo).

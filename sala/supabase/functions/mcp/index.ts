@@ -370,8 +370,7 @@ function rotulo(m: Msg, q?: Quem) {
     if (m.estado === "pendente") {
       const ja = (m.votos ?? []).map((v) => v.perfis?.nome ?? "?");
       const parcial = ja.length ? tr(q, ` (já aprovou: ${ja.join(", ")}; falta outra aprovação)`, ` (already approved by: ${ja.join(", ")}; another approval is needed)`) : "";
-      const todos = m.novo_contexto ? tr(q, "; precisa do sim de todas as pessoas", "; needs every person's yes")
-        : m.aprovadores?.length ? tr(q, `; decide quem foi indicado: ${quemAprova(m)} (quantos, pela regra da sala)`, `; the named people decide: ${quemAprova(m)} (how many, per the room setting)`) : "";
+      const todos = m.aprovadores?.length ? tr(q, `; decide quem foi indicado: ${quemAprova(m)} (quantos, pela regra da sala)`, `; the named people decide: ${quemAprova(m)} (how many, per the room setting)`) : "";
       return tr(q, ` · PROPOSTA${ctx} aguardando decisão das pessoas${parcial}${todos}`, ` · PROPOSAL${ctx} waiting for people to decide${parcial}${todos}`);
     }
     if (m.estado === "ajuste") return tr(q, ` · PROPOSTA${ctx} EM AJUSTE: ${m.decisor?.nome ?? "?"} pediu ajuste (veja a nota na decisão logo depois). Quem propôs corrige e reenvia com substitui=${m.id}`,
@@ -963,7 +962,7 @@ DECISIONS
 - Only pass aprovadores when the instructions say who approves what (e.g. "spending: Roberto and David"). Never write in the proposal that it needs everyone's yes.
 - Propose only when the discussion is closed: no open points between agents and the people aren't still deciding. Never repeat a proposal as a message: point to it. The proposal itself is short: what, why, what changes; details go in an attached file.
 - A person asked for changes ("ADJUSTMENT REQUEST") or declined with a reason? Fix it, check with the other agents if it touches their part, and resend once with substitui = the old proposal's id. Don't resend in the same minute without changes.
-- The room instructions belong to the people. To change them, use propor_contexto with the whole new text: it needs every person's yes, and the app swaps it by itself.
+- The room instructions belong to the people. To change them, use propor_contexto with the whole new text: it goes through like any proposal (the room setting says how many approvals), and the app swaps it by itself.
 
 MEMORY
 - The room memory is yours to keep: the project's current state, not its history. Sections: Now (what's in progress), Decided, Next (who does what), Where things are, Roles in practice, Agreements. Aim for under 4,000 characters; rewrite what got old instead of piling up.
@@ -1011,7 +1010,7 @@ DECISÕES
 - Só passe aprovadores quando as instruções disserem quem aprova o quê (ex.: "gasto: Roberto e David"). Nunca escreva na proposta que precisa do sim de todos.
 - Só proponha quando a discussão fechou: nada em aberto entre os agentes e as pessoas não estão mais decidindo. Nunca repita uma proposta como mensagem: aponte para ela. A proposta em si é curta: o quê, por quê, o que muda; o detalhe vai em arquivo anexo.
 - A pessoa pediu ajuste ("PEDIDO DE AJUSTE") ou recusou com motivo? Corrija, confirme com os outros agentes se mexer na parte deles e reenvie uma vez, com substitui = o id da proposta antiga. Não reenvie no mesmo minuto sem mudar nada.
-- As instruções da sala são das pessoas. Para mudar, use propor_contexto com o texto novo inteiro: precisa do sim de todas as pessoas, e o app troca sozinho.
+- As instruções da sala são das pessoas. Para mudar, use propor_contexto com o texto novo inteiro: passa como qualquer proposta (a regra da sala diz quantas aprovações), e o app troca sozinho.
 
 MEMÓRIA
 - A memória da sala é sua de manter: o estado atual do projeto, não o histórico. Seções: Agora (o que está andando), Decidido, Próximos (quem faz o quê), Onde está cada coisa, Papéis na prática, Combinados. Mire em menos de 4.000 caracteres; reescreva o que ficou velho em vez de acumular.
@@ -1187,7 +1186,7 @@ const TOOLS_PT = [
   },
   {
     name: "propor_contexto",
-    description: "Propõe trocar as instruções da sala (o texto das pessoas) por um texto novo. Só passa com o sim de todas as pessoas que escrevem na sala; quando a última aprova, o app troca sozinho. Para registrar o estado do projeto, use atualizar_memoria.",
+    description: "Propõe trocar as instruções da sala (o texto das pessoas) por um texto novo. Passa como qualquer proposta, com as aprovações que a sala pede; quando aprovada, o app troca sozinho. Para registrar o estado do projeto, use atualizar_memoria.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1401,7 +1400,7 @@ const EN: Record<string, { d: string; p?: Record<string, string> }> = {
   ver_painel: { d: "Shows the room's progress: by workstream (plan and projection), who still has to approve what, overdue tasks and weekly pace. The same numbers as the app's dashboard." },
   atualizar_memoria: { d: "Updates the room memory: the project's current state, which agents keep without asking for approval (it's versioned and people can undo). Prefer small replacements; rewrite everything only to reorganize.",
     p: { resumo: "One line: what changed and why (e.g. \"Annual price settled in today's decision\").", trocas: "Replacements in the current text: each `de` must appear exactly once in the memory and becomes `para`. An empty `de` appends `para` at the end.", texto: "Or the whole new memory (up to 50,000 characters), instead of trocas." } },
-  propor_contexto: { d: "Proposes replacing the room instructions (the people's text) with a new text. It only passes with the yes of every person who writes in the room; once the last one approves, the app swaps it by itself. To record the project's state, use atualizar_memoria.",
+  propor_contexto: { d: "Proposes replacing the room instructions (the people's text) with a new text. It passes like any proposal, with the approvals the room setting asks for; once approved, the app swaps it by itself. To record the project's state, use atualizar_memoria.",
     p: { substitui: "Id of your earlier proposal that this version replaces (the one they asked to adjust, or that you are fixing). The old one leaves the queue and its approvals don't count.", texto: "The proposal, short: what changes compared to the current context and why. Markdown ok.", contexto: "The whole new context, as it should read (up to 50,000 characters).", responde_a: "Id of the message that led to the proposal, if any." } },
   editar_mensagem: { d: "Fixes the text of one of your own messages (sent by you, the agent). Regular messages only; proposals and decisions don't change. The room shows \"(edited)\".",
     p: { mensagem: "Id (#N) of your message.", texto: "The whole new text." } },
@@ -1593,9 +1592,9 @@ async function chamar(q: Quem, nome: string, a: any): Promise<string | Conteudo[
       const { data: mb } = await db.from("membros").select("papel").eq("sala_id", s.id).eq("user_id", q.userId).maybeSingle();
       if (!mb || mb.papel === "leitor") throw new Falha(tr(q, "Nesta sala a sua pessoa só acompanha: não dá para propor.", "Your person can only view this room: you can't propose."), 403);
       const m = await enviar(q, s.id, { texto: String(a.texto ?? ""), proposta: true, responde_a: a.responde_a, novo_contexto: String(a.contexto ?? ""), substitui: a.substitui });
-      const { count } = await db.from("membros").select("user_id", { count: "exact", head: true }).eq("sala_id", s.id).in("papel", ["dono", "membro"]);
-      return tr(q, `Proposta #${m.id} de troca do contexto enviada na sala "${s.nome}". Precisa do sim de todas as ${count ?? "?"} pessoas; quando a última aprovar, o contexto muda sozinho.`,
-        `Context proposal #${m.id} sent to the room "${s.nome}". It needs the yes of all ${count ?? "?"} people; when the last one approves, the context changes by itself.`);
+      const n = Math.max(1, Number(s.aprovacoes ?? 1));
+      return tr(q, `Proposta #${m.id} de troca do contexto enviada na sala "${s.nome}". Precisa de ${n} sim (regra da sala); aprovada, o contexto muda sozinho.`,
+        `Context proposal #${m.id} sent to the room "${s.nome}". It needs ${n} yes (room setting); once approved, the context changes by itself.`);
     }
     case "editar_mensagem":
       return await editarMensagem(q, Number(a.mensagem), String(a.texto ?? ""));
@@ -1778,7 +1777,7 @@ async function desinscrever(q: Quem, p: any) {
 // manda versão, cliente e capacidades em cada pedido (_meta) e começa por server/discover. Na nova, todo resultado
 // leva resultType, e as listas levam dicas de cache.
 const VERSOES = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVIDOR = { name: "sala", title: "The Sala", version: "4.29.0" };
+const SERVIDOR = { name: "sala", title: "The Sala", version: "4.30.0" };
 const versaoModerna = (msg: any): string | undefined => msg?.params?._meta?.["io.modelcontextprotocol/protocolVersion"];
 
 async function mcp(q: Quem, msg: any) {
