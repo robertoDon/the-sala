@@ -608,6 +608,12 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 .evento time { color: var(--cinza); flex: none; }
 /* o link quebra junto com o texto (botão é bloco em linha e descia inteiro, centralizado) */
 .evento .link { font-size: inherit; display: inline; text-align: left; }
+/* tarefa concluída por agente: uma linha, o resultado cortado abre ao tocar */
+.evento-tarefa .evento-icone { color: var(--ok); }
+.evento-resultado { display: block; margin: 2px 0 0; padding: 0; font: inherit; text-align: left; color: var(--cinza); background: none; border: 0; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60ch; }
+.evento-resultado.aberto { white-space: normal; }
+.evento-resultado:hover { color: var(--tinta); }
 
 /* respostas dos agentes a @agentes */
 .respostas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 4px; }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../App";
 import { Layout, corDaSala, useSalas } from "../components/Layout";
-import { type Aprovacao, Bolha, Evento, type Citacao, type GrupoReacao } from "../components/Bolha";
+import { type Aprovacao, Bolha, Evento, EventoTarefa, type Citacao, type GrupoReacao, tarefaFeita } from "../components/Bolha";
 import { Ajustes } from "../components/Ajustes";
 import { Compor, type ComporApi, type Sugestao } from "../components/Compor";
 import { Decisoes } from "../components/Decisoes";
@@ -533,17 +533,17 @@ export default function SalaPage() {
       if (!msgs[i].agente) { i++; continue; }
       let j = i;
       while (j < msgs.length && msgs[j].agente && msgs[j].tipo !== "decisao") j++;
-      // sequência i..j-1 só de agentes: fica a primeira e as duas últimas
-      if (j - i >= 6) {
+      // sequência i..j-1 só de agentes: fica a primeira e a última (quem conduz fecha para as pessoas)
+      if (j - i >= 4) {
         let bloco: Mensagem[] = [];
         const fecha = () => {
-          if (bloco.length >= 3 && !abertos.has(bloco[0].id)) {
+          if (bloco.length >= 2 && !abertos.has(bloco[0].id)) {
             const quem = [...new Set(bloco.map((x) => autor(x)))];
             bloco.forEach((x, k) => oculta.set(x.id, k === 0 ? { inicio: x.id, n: bloco.length, quem } : null));
           }
           bloco = [];
         };
-        for (let k = i + 1; k < j - 2; k++) { if (fixa(msgs[k])) fecha(); else bloco.push(msgs[k]); }
+        for (let k = i + 1; k < j - 1; k++) { if (fixa(msgs[k])) fecha(); else bloco.push(msgs[k]); }
         fecha();
       }
       i = j;
@@ -754,6 +754,16 @@ export default function SalaPage() {
                     {novoDia && <div className="dia" role="separator"><span>{dia(m.criada_em)}</span></div>}
                     {marcoAqui}
                     <Evento m={m} quem={m.user_id === eu ? t("Você", "You") : nome(m.user_id)} de={p ? autor(p) : ""} quando={hora(m.criada_em)} irPara={irPara} />
+                  </div>
+                );
+              }
+              const feita = m.agente && m.tipo === "mensagem" && !m.apagada && !(m.anexos?.length) ? tarefaFeita(m.texto) : null;
+              if (feita) {
+                return (
+                  <div key={m.id} className="msg-bloco">
+                    {novoDia && <div className="dia" role="separator"><span>{dia(m.criada_em)}</span></div>}
+                    {marcoAqui}
+                    <EventoTarefa id={m.id} quem={autor(m)} titulo={feita.titulo} resultado={feita.resultado} quando={hora(m.criada_em)} abrir={() => setPainel("tarefas")} />
                   </div>
                 );
               }

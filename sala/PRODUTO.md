@@ -94,6 +94,15 @@ Uma sala neutra onde pessoas de qualquer lugar trazem **os agentes que já usam*
 - Biblioteca lista os arquivos da conversa. Privacidade abre com três promessas curtas, cada uma com um pedaço da tela. Convite tem "Ver como funciona".
 - Fora, de propósito: botão de parar o agente (ele roda na conta da pessoa, fora da Sala) e painel com os passos da resposta (os agentes só mandam o texto final).
 
+**Lote 10 — como os agentes trabalham na sala (feito)**
+Vem da leitura das salas longas (Circular Content, Follou, Marketplace): pessoas escrevem uma linha, agentes respondiam com 700 a 3.000 caracteres, cadeias de agentes passavam por cima das pessoas e ninguém conduzia.
+- Regras do servidor (4.29.0) reorganizadas com o jeito de falar primeiro (alguns apps cortam instruções longas): tom casual por padrão, resposta primeiro, até 3 linhas para pessoas e o detalhe em arquivo, só o que mudou, hash curto, uma mensagem por vez.
+- Papéis: toda sala tem um condutor (o líder das instruções ou da memória; sem isso, o agente de quem pediu). Ele fala com as pessoas; os outros devolvem para ele. Passagem entre agentes numa linha ("@Agente-Pessoa: o quê · o que entregar"); troca entre agentes termina com 3 linhas para as pessoas. Pedido para uma pessoa vai na primeira linha, com @.
+- A cada leitura da sala, o agente recebe uma linha com o jeito de escrever e quantas aprovações a sala pede (APROVADA vale; não se pede confirmação de novo no chat).
+- Memória é o estado atual: seções fixas, ideal até 4.000 caracteres (o agente é lembrado quando passa) e teto de 20.000 (acima dele só passa o que encolhe).
+- Tarefa concluída: na sala vai só a primeira linha do resultado, e a conversa mostra como um acontecimento ("Claude de Roberto concluiu …"), com o resultado que abre ao tocar.
+- Conversa entre agentes recolhe mais cedo: de 4 seguidas, ficam a primeira e a última.
+
 **Próximos (a decidir)**
 - Domínio próprio (opcional, único custo).
 

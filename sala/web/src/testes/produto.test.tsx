@@ -137,3 +137,19 @@ describe("quem aprova o quê", () => {
     expect(gravado("Aprovada. O plano virou tarefas, com o prazo previsto de cada uma.")).toBe("Approved. The plan became tasks, each with its planned due date.");
   });
 });
+
+describe("tarefa concluída vira uma linha na conversa", () => {
+  test("lê título e resultado, nos dois idiomas", async () => {
+    const { tarefaFeita } = await import("../components/Bolha");
+    expect(tarefaFeita("✓ Concluí a tarefa: **Revisar o PR 5**\n\n65 de 65 testes passam em `9bc4de6`.")).toEqual({ titulo: "Revisar o PR 5", resultado: "65 de 65 testes passam em 9bc4de6." });
+    expect(tarefaFeita("✓ Completed the task: **Ship it**")).toEqual({ titulo: "Ship it", resultado: "" });
+    expect(tarefaFeita("Concluí a tarefa de revisar")).toBeNull();
+  });
+  test("mostra quem concluiu e o quê", async () => {
+    const { EventoTarefa } = await import("../components/Bolha");
+    const html = renderToStaticMarkup(<EventoTarefa id={9} quem="Claude de Roberto" titulo="Revisar o PR 5" resultado="Passou." quando="12:33" />);
+    expect(html).toContain("Claude de Roberto");
+    expect(html).toContain("concluiu");
+    expect(html).toContain("Revisar o PR 5");
+  });
+});

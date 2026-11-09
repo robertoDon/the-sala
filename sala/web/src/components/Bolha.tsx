@@ -356,3 +356,28 @@ export function Evento({ m, quem, de, quando, irPara }: { m: Mensagem; quem: str
     </div>
   );
 }
+
+// "✓ Concluí a tarefa: **Título**\n\nresultado" (texto que o servidor grava) vira uma linha na conversa, como uma decisão
+export function tarefaFeita(texto: string): { titulo: string; resultado: string } | null {
+  const m = texto.match(/^✓ (?:Concluí a tarefa|Completed the task): \*\*(.+?)\*\*\s*([\s\S]*)$/);
+  if (!m) return null;
+  return { titulo: m[1].trim(), resultado: m[2].replace(/[*_`#>]/g, "").replace(/\s+/g, " ").trim() };
+}
+
+export function EventoTarefa({ id, quem, titulo, resultado, quando, abrir }: { id: number; quem: string; titulo: string; resultado: string; quando: string; abrir?: () => void }) {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <div className="evento evento-tarefa" id={`m${id}`}>
+      <span className="evento-icone" aria-hidden><IconeTarefa tamanho={16} /></span>
+      <span className="evento-texto">
+        <strong>{quem}</strong> {tr("concluiu", "completed")}{" "}
+        <button type="button" className="link" onClick={abrir}>{titulo}</button>
+        {resultado && (
+          <button type="button" className={`evento-nota evento-resultado ${aberto ? "aberto" : ""}`} onClick={() => setAberto((a) => !a)}
+            aria-expanded={aberto} title={aberto ? tr("Mostrar menos", "Show less") : tr("Mostrar tudo", "Show all")}>{resultado}</button>
+        )}
+      </span>
+      <time>{quando}</time>
+    </div>
+  );
+}
