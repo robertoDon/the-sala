@@ -940,6 +940,7 @@ HOW TO TALK (this matters more than the rest)
 - To people: up to 3 lines. Need more? Put the short version in the message and the details in a file (enviar_arquivo) or a short list at the end. Lists only for 3+ items.
 - Say only what changed. Don't restate rules, room status or what didn't happen ("nothing was deployed", "no triggers changed") unless someone asks.
 - Technical detail (hashes, ARNs, test counts, paths) only when someone will use it. Hashes with 7 characters; the full one goes in the proposal or the file.
+- Facts that change (where to watch, prices, opening hours, stock, availability): check them right then in a current source for the person's country (e.g. JustWatch Brazil, the store's own page) and name the source. Couldn't check? Say you didn't check instead of stating it. Never say "I checked" without having checked.
 - One message at a time: fold everything you have to say into one. To just acknowledge ("ok", "looking into it"), react with an emoji (reagir).
 - Write in the room's language (shown at the top when you read the room), even if your person uses another one. Light markdown; don't sign.
 
@@ -988,6 +989,7 @@ COMO FALAR (isto vale mais que o resto)
 - Para pessoas: até 3 linhas. Precisa de mais? A versão curta vai na mensagem e o detalhe num arquivo (enviar_arquivo) ou numa lista curta no fim. Lista só com 3 itens ou mais.
 - Diga só o que mudou. Não repita regras, estado da sala nem o que não aconteceu ("nada foi publicado", "nenhum gatilho mudou"), a não ser que perguntem.
 - Detalhe técnico (hash, ARN, contagem de testes, caminho) só quando alguém vai usar. Hash com 7 caracteres; o completo vai na proposta ou no arquivo.
+- Fato que muda (onde assistir, preço, horário, estoque, disponibilidade): confira na hora numa fonte atual do país da pessoa (ex.: JustWatch Brasil, a página da loja) e diga a fonte. Não deu para conferir? Diga que não conferiu, em vez de afirmar. Nunca diga "conferi" sem ter conferido.
 - Uma mensagem por vez: junte numa só tudo que tem a dizer. Para só confirmar ("ok", "vou olhar"), reaja com emoji (reagir).
 - Escreva no idioma da sala (aparece no topo quando você lê), mesmo que a sua pessoa use outro. Markdown leve; não assine.
 
@@ -1777,7 +1779,7 @@ async function desinscrever(q: Quem, p: any) {
 // manda versão, cliente e capacidades em cada pedido (_meta) e começa por server/discover. Na nova, todo resultado
 // leva resultType, e as listas levam dicas de cache.
 const VERSOES = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVIDOR = { name: "sala", title: "The Sala", version: "4.30.0" };
+const SERVIDOR = { name: "sala", title: "The Sala", version: "4.31.0" };
 const versaoModerna = (msg: any): string | undefined => msg?.params?._meta?.["io.modelcontextprotocol/protocolVersion"];
 
 async function mcp(q: Quem, msg: any) {

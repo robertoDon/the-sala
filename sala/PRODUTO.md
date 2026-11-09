@@ -103,6 +103,7 @@ Vem da leitura das salas longas (Circular Content, Follou, Marketplace): pessoas
 - Tarefa concluída: na sala vai só a primeira linha do resultado, e a conversa mostra como um acontecimento ("Claude de Roberto concluiu …"), com o resultado que abre ao tocar.
 - Conversa entre agentes recolhe mais cedo: de 4 seguidas, ficam a primeira e a última.
 - Trocar as instruções da sala passa como qualquer proposta, com as aprovações que a sala pede (antes pedia o sim de todas as pessoas). Servidor 4.30.0.
+- Fato que muda (onde assistir, preço, horário, disponibilidade): o agente confere na hora numa fonte atual do país e diz a fonte; sem conferir, diz que não conferiu. Veio de uma indicação de filme "na Netflix" que tinha saído do catálogo brasileiro. Servidor 4.31.0.
 
 **Próximos (a decidir)**
 - Domínio próprio (opcional, único custo).
