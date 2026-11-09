@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Mensagem } from "../supabase";
 import { IconeAgente, IconeJoinha, IconeReagir, IconeCopiar, IconeCheck, IconeDecisao, IconeFechar, IconeLapis, IconeLixo, IconeProposta, IconeRecusa, IconeResponder, IconeTarefa } from "./Icones";
 import { Texto } from "./Texto";
@@ -68,11 +68,30 @@ type Props = {
   fila?: { ate: string; agora: () => void }; // mensagem segurada enquanto um agente lê a sala
 };
 
-// seletor rápido de emojis: abre ao lado do botão, fecha com Esc ou clique fora
+const areaDaConversa = (el: HTMLElement) => (el.closest(".feed") ?? document.documentElement).getBoundingClientRect();
+
+// o que abre por cima da conversa (seletor de emoji, barra de ações no toque) fica dentro dela:
+// se passar de um lado, desliza para dentro (senão some da tela ou a conversa rola para o lado)
+function caberNaConversa(el: HTMLElement) {
+  el.style.translate = "";
+  const area = areaDaConversa(el);
+  const r = el.getBoundingClientRect();
+  const folga = 8;
+  const dx = r.left < area.left + folga ? area.left + folga - r.left : r.right > area.right - folga ? area.right - folga - r.right : 0;
+  if (dx) el.style.translate = `${Math.round(dx)}px 0`;
+}
+
+// seletor rápido de emojis: abre acima do botão (abaixo, se não couber), fecha com Esc ou clique fora
 function Seletor({ escolher, fechar }: { escolher: (e: string) => void; fechar: () => void }) {
   const caixa = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = caixa.current;
+    if (!el) return;
+    if (el.getBoundingClientRect().top < areaDaConversa(el).top + 8) el.classList.add("seletor-abaixo");
+    caberNaConversa(el);
+  }, []);
   useEffect(() => {
-    caixa.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    caixa.current?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
     // o próprio botão de reagir fica de fora: ele mesmo abre e fecha
     const fora = (e: PointerEvent) => { if (!caixa.current?.parentElement?.contains(e.target as Node)) fechar(); };
     const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); fechar(); } };
@@ -107,6 +126,9 @@ export function Bolha(p: Props) {
   const [faltou, setFaltou] = useState<string | null>(null); // nota do 👎 sendo escrita
   const fecharSeletor = useCallback(() => setEscolhendo(false), []);
   const caixa = useRef<HTMLTextAreaElement>(null);
+  // no toque a barra de ações abre por cima do texto quando algo da mensagem ganha foco
+  const barra = useRef<HTMLDivElement>(null);
+  const ajustarBarra = () => { const b = barra.current; if (b && getComputedStyle(b).position === "absolute") caberNaConversa(b); };
 
   useEffect(() => {
     if (editando && caixa.current) {
@@ -142,7 +164,7 @@ export function Bolha(p: Props) {
     m.apagada ? "msg-apagada" : "", p.destaque ? "msg-destaque" : ""].join(" ");
 
   return (
-    <article className={cls} id={`m${m.id}`} tabIndex={-1}>
+    <article className={cls} id={`m${m.id}`} tabIndex={-1} onFocus={ajustarBarra} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) barra.current?.style.removeProperty("translate"); }}>
       {(!continua || proposta) && (
         <header className="msg-meta">
           {m.agente ? (
@@ -274,6 +296,7 @@ export function Bolha(p: Props) {
 
         {temAcoes && !editando && (
           <div className="msg-acoes" role="toolbar" aria-label={tr("Ações da mensagem", "Message actions")}>
+            <div className="msg-acoes-barra" ref={barra}>
             {p.reagir && (
               <span className="reagir-ancora">
                 <button type="button" className="btn-acao" onClick={() => setEscolhendo((v) => !v)} aria-expanded={escolhendo} aria-haspopup="menu"
@@ -298,6 +321,7 @@ export function Bolha(p: Props) {
             {p.virarTarefa && <button type="button" className="btn-acao" onClick={p.virarTarefa} title={tr("Virar tarefa", "Turn into a task")} aria-label={tr("Virar tarefa", "Turn into a task")}><IconeTarefa tamanho={16} /></button>}
             {p.editar && <button type="button" className="btn-acao" onClick={() => { setRascunho(m.texto); setEditando(true); }} title={tr("Editar", "Edit")} aria-label={tr("Editar", "Edit")}><IconeLapis tamanho={16} /></button>}
             {p.apagar && <BotaoConfirmar className="btn-acao" titulo={tr("Apagar", "Delete")} confirmar={tr("Apagar", "Delete")} aviso={tr("O texto some para todos, pessoas e agentes.", "It will be removed for everyone, people and agents alike.")} onConfirmar={p.apagar}><IconeLixo tamanho={16} /></BotaoConfirmar>}
+            </div>
           </div>
         )}
       </div>
