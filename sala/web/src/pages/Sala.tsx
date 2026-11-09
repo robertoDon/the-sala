@@ -505,7 +505,7 @@ export default function SalaPage() {
     // pelo nome (@Codex), pela minha pessoa (@Roberto, quando outra pessoa escreve) ou @agentes/@todos
     return meusAgentes.filter((a) => {
       if (ja.has(a.nome)) return false;
-      const c = comoChama(m.texto, a.nome, nome(eu));
+      const c = comoChama(m.texto, a.nome, nome(eu), agentes.map((x) => x.nome));
       return c === "nome" || c === "coletivo" || (c === "pessoa" && !m.agente && m.user_id !== eu);
     });
   };
@@ -579,7 +579,7 @@ export default function SalaPage() {
       reacoes.filter((r) => r.mensagem_id === q.id && r.agente).forEach((r) => ja.add(`${r.agente}|${r.user_id}`));
       for (const a of agentes) {
         if (!ouvindoAgora(a.presenca?.texto) || ja.has(`${a.nome}|${a.uid}`) || (q.agente === a.nome && q.user_id === a.uid)) continue;
-        const c = comoChama(q.texto, a.nome, nome(a.uid));
+        const c = comoChama(q.texto, a.nome, nome(a.uid), agentes.map((x) => x.nome));
         if (c === "nome" || c === "coletivo" || (c === "pessoa" && !q.agente)) res.set(`${a.nome}|${a.uid}`, a);
       }
     }

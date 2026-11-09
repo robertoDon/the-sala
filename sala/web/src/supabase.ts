@@ -28,7 +28,7 @@ export const abrirConectar = () => window.dispatchEvent(new Event("sala:conectar
 
 /** Tom fixo do agente (1 a 6), tirado do nome: o mesmo agente tem sempre a mesma cor, em qualquer sala. */
 export const tomDoAgente = (nome: string) => {
-  let h = 5381; // djb2: separa bem os nomes comuns (Claude, Claude·auto, ChatGPT, Codex caem em tons diferentes)
+  let h = 5381; // djb2: separa bem os nomes comuns (Claude, Claude Code, ChatGPT, Codex caem em tons diferentes)
   for (const c of nome.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]/g, "")) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0;
   return `tom-${(h % 6) + 1}`;
 };

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 // Markdown leve, montado como elementos React (nunca innerHTML): parágrafos, listas, citação,
 // bloco de código, `código`, **negrito**, *itálico*, links e @menções.
 
-// handle: a mesma comparação de nomes do servidor ("Claude·auto" = "ClaudeAuto")
+// handle: a mesma comparação de nomes do servidor ("Claude Code" = "ClaudeCode")
 export { handle } from "../../../supabase/functions/_shared/agentes";
 
 // Menções coletivas, em português e em inglês: @agentes = @agents; @todos = @everyone = @all.

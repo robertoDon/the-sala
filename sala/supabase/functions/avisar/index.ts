@@ -102,7 +102,7 @@ async function empurrar(i: { endpoint: string; p256dh: string; auth: string }, d
 
 // ---------------------------------------------------------------- quem avisar
 
-// @Codex, @Claude·auto, @Claude-Ana, @Ana, @agentes, @todos (e @agents, @everyone, @all): regra comum em _shared/agentes.ts
+// @Codex, @ClaudeCode, @Claude-Ana, @Ana, @agentes, @todos (e @agents, @everyone, @all): regra comum em _shared/agentes.ts
 const handle = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
 const mencoes = (t: string) => mencoesDe(t).map((m) => m.alvo);
 
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
   const agenteChamado = (uid: string, nomePessoa: string): string | null => {
     // quem responde sozinho não precisa que a pessoa toque para pedir
     const meus = (agentesSala ?? []).filter((a) => a.user_id === uid && !a.desperta);
-    const porNome = meus.find((x) => comoChama(m.texto, x.nome, nomePessoa) === "nome");
+    const porNome = meus.find((x) => comoChama(m.texto, x.nome, nomePessoa, (agentesSala ?? []).map((y) => y.nome)) === "nome");
     if (porNome) return porNome.nome;
     // @agentes escrito por um agente não acorda ninguém: senão vira uma corrente de avisos
     if (ditas.includes("agentes") && meus.length && !m.agente) return meus.length === 1 ? meus[0].nome : TODOS;
@@ -299,7 +299,7 @@ async function despertar(id: number, so: { user_id: string; agente: string } | n
     if (dono && dono.user_id === d.user_id && dono.agente === d.agente) return true;
     // pelo nome (@Codex, @Codex-Cathleen) acorda sempre; @Cathleen, @agentes e @todos só quando uma pessoa escreveu
     // (agente chamando a pessoa ou todo mundo não acorda ninguém: senão vira corrente)
-    const como = comoChama(m.texto, d.agente, pessoa.get(d.user_id)?.nome ?? "");
+    const como = comoChama(m.texto, d.agente, pessoa.get(d.user_id)?.nome ?? "", (ouvindo ?? []).map((a) => a.nome));
     if (como === "nome") return true;
     if (m.agente) return false;
     return como === "coletivo" || como === "pessoa";

@@ -209,6 +209,7 @@ async function acharSala(q: Quem, ref?: string): Promise<Sala> {
     ss.find((s) => s.nome.toLowerCase().includes(r));
   if (!s) throw new Falha(tr(q, `Sala "${ref}" não encontrada. Salas de ${q.pessoa}: `, `Room "${ref}" not found. ${q.pessoa}'s rooms: `) + `${ss.map((s) => `"${s.nome}"`).join(", ")}.`, 404);
   naSala(q, s.id);
+  await lembrarNomes(s.id);
   return s;
 }
 
@@ -387,8 +388,17 @@ async function esperar(q: Quem, sala: string, depois: number, segundos: number) 
   }
 }
 
-// @Codex, @Claude·auto, @Claude-Roberto, @Roberto (a pessoa e os agentes dela), @agentes, @todos: regra comum em _shared/agentes.ts
-const meChamou = (q: Quem, m: { texto: string; agente: string | null }) => chama(m.texto, q.agente, q.pessoa, !!m.agente);
+// @Codex, @ClaudeCode, @Claude-Roberto, @Roberto (a pessoa e os agentes dela), @agentes, @todos: regra comum em _shared/agentes.ts
+// nomes dos agentes de cada sala (cache de 1 min, cheio pelo acharSala): "@Claude Code" com espaço chama o Claude Code, não o Claude
+const nomesNaSala = new Map<string, { nomes: string[]; ate: number }>();
+async function lembrarNomes(sala: string) {
+  const c = nomesNaSala.get(sala);
+  if (c && c.ate > Date.now()) return;
+  const grupos = await quemEQuem(sala).catch(() => []);
+  nomesNaSala.set(sala, { nomes: grupos.flatMap((g) => g.agentes.map((a) => a.nome)), ate: Date.now() + 60_000 });
+}
+const meChamou = (q: Quem, m: { texto: string; agente: string | null; sala_id?: string }) =>
+  chama(m.texto, q.agente, q.pessoa, !!m.agente, (m.sala_id && nomesNaSala.get(m.sala_id)?.nomes) || []);
 
 const quemEscreveu = (m: Msg, q?: Quem) => (m.agente
   ? tr(q, `${m.agente} de ${m.autor?.nome ?? "?"}`, `${m.agente} (${m.autor?.nome ?? "?"}'s agent)`)
@@ -1026,7 +1036,7 @@ WHEN TO TALK
 ROLES AND HANDOFFS
 - Every room has a lead: the agent the instructions or the memory ("Roles in practice") name as lead. Without one, the lead is the agent of the person who made the request. The lead talks to the people: sums up, asks, proposes. The others do their part and hand it back to the lead.
 - Handing work to another agent: one line per ask, "@Agent: what · what to deliver" (the @ shown in "Who's who"; @Agent-Person when two people have agents with the same name). Replying to an agent: just the result or the problem, no audience.
-- The room already shows who wrote each message (agent · person). Don't introduce yourself or tag your text ("Codex here", "[Claude·auto]"). If your person uses more than one agent in the same app, say who you are once at the start with registrar_agente.
+- The room already shows who wrote each message (agent · person). Don't introduce yourself or tag your text ("Codex here", "[Claude·live]"). If your person uses more than one agent in the same app, say who you are once at the start with registrar_agente.
 - When an exchange between agents ends, the lead closes it for the people in up to 3 lines: what's done, what's left and whose it is.
 - Need a person (a decision, access, a file)? Put it on the first line with @Name and the exact question ("@Cathleen: can you refresh the dev SSO? That's the only thing missing."). Don't bury it.
 - When you deliver, end with the next step and whose it is, in one line. A person just says "hi"? Answer briefly with what's waiting for them.
@@ -1076,7 +1086,7 @@ QUANDO FALAR
 PAPÉIS E PASSAGEM
 - Toda sala tem um condutor: o agente que as instruções ou a memória ("Papéis na prática") apontam como líder. Sem isso, conduz o agente da pessoa que fez o pedido. O condutor fala com as pessoas: resume, pergunta, propõe. Os outros fazem a sua parte e devolvem ao condutor.
 - Passar trabalho para outro agente: uma linha por pedido, "@Agente: o quê · o que entregar" (o @ que aparece no "Quem é quem"; @Agente-Pessoa quando duas pessoas têm agentes com o mesmo nome). Respondendo a um agente: só o resultado ou o problema, sem plateia.
-- A sala já mostra quem escreveu cada mensagem (agente · pessoa). Não se apresente nem ponha etiqueta no texto ("Codex aqui", "[Claude·auto]"). Se a sua pessoa usa mais de um agente no mesmo app, diga quem você é uma vez, no começo, com registrar_agente.
+- A sala já mostra quem escreveu cada mensagem (agente · pessoa). Não se apresente nem ponha etiqueta no texto ("Codex aqui", "[Claude·live]"). Se a sua pessoa usa mais de um agente no mesmo app, diga quem você é uma vez, no começo, com registrar_agente.
 - Quando uma troca entre agentes termina, quem conduz fecha para as pessoas em até 3 linhas: o que ficou pronto, o que falta e de quem.
 - Precisa de uma pessoa (decisão, acesso, arquivo)? Ponha na primeira linha, com @Nome e a pergunta exata ("@Cathleen: renova o SSO do dev? É só isso que falta."). Não enterre no meio.
 - Ao entregar, termine com o próximo passo e de quem é, numa linha. A pessoa só disse "oi"? Responda curto com o que está esperando por ela.
@@ -1459,7 +1469,7 @@ const TOOLS_PT = [
   },
   {
     name: "registrar_agente",
-    description: "Diz à Sala quem você é nesta conexão: um nome curto de agente (ex.: \"Codex\", \"Claude·auto\") e, se quiser, o seu papel em uma linha. Vale para o resto desta sessão: as suas mensagens, propostas e tarefas saem como \"Nome · Pessoa\" e @Nome chama só você. Use quando a sua pessoa tem mais de um agente no mesmo app; não precisa se apresentar no texto.",
+    description: "Diz à Sala quem você é nesta conexão: um nome curto de agente (ex.: \"Codex\", \"Claude Code\") e, se quiser, o seu papel em uma linha. Vale para o resto desta sessão: as suas mensagens, propostas e tarefas saem como \"Nome · Pessoa\" e @Nome chama só você. Use quando a sua pessoa tem mais de um agente no mesmo app; não precisa se apresentar no texto.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1472,8 +1482,8 @@ const TOOLS_PT = [
 ];
 
 // `agente` em toda ferramenta: para quando a conexão não declarou nome (dois agentes da mesma pessoa no mesmo conector)
-const AGENTE_ARG = { type: "string", description: "Opcional: o seu nome de agente nesta chamada (ex.: \"Claude·auto\"), quando a conexão não declarou um (registrar_agente, ?agente= no endereço). Sem ele, você sai com o nome do app." };
-const AGENTE_EN = "Optional: your agent name for this call (e.g. \"Claude·auto\"), when the connection hasn't declared one (registrar_agente, ?agente= in the URL). Without it, you show up with the app name.";
+const AGENTE_ARG = { type: "string", description: "Opcional: o seu nome de agente nesta chamada (ex.: \"Claude Code\"), quando a conexão não declarou um (registrar_agente, ?agente= no endereço). Sem ele, você sai com o nome do app." };
+const AGENTE_EN = "Optional: your agent name for this call (e.g. \"Claude Code\"), when the connection hasn't declared one (registrar_agente, ?agente= in the URL). Without it, you show up with the app name.";
 const TOOLS = TOOLS_PT.map((t) => (t.name === "search" || t.name === "fetch" || t.name === "registrar_agente" ? t
   : { ...t, inputSchema: { ...t.inputSchema, properties: { ...((t.inputSchema as any).properties ?? {}), agente: AGENTE_ARG } } }));
 
@@ -1528,7 +1538,7 @@ const EN: Record<string, { d: string; p?: Record<string, string> }> = {
   tirar_biblioteca: { d: "Removes an item from the room library (item N). It's recorded in the room history.", p: { item: "The item number (item N)." } },
   esperar_mensagens: { d: "Waits up to ~50 s for a new message from another person or agent and returns the new ones. Call it again with `depois` = the last id you got to follow the conversation.",
     p: { depois: "Last id you saw. 0 = from now on." } },
-  registrar_agente: { d: "Tells the Sala who you are on this connection: a short agent name (e.g. \"Codex\", \"Claude·auto\") and, optionally, your role in one line. It holds for the rest of this session: your messages, proposals and tasks show as \"Name · Person\" and @Name calls only you. Use it when your person has more than one agent in the same app; no need to introduce yourself in the text.",
+  registrar_agente: { d: "Tells the Sala who you are on this connection: a short agent name (e.g. \"Codex\", \"Claude Code\") and, optionally, your role in one line. It holds for the rest of this session: your messages, proposals and tasks show as \"Name · Person\" and @Name calls only you. Use it when your person has more than one agent in the same app; no need to introduce yourself in the text.",
     p: { nome: "Short agent name (up to 24 characters: letters, digits, spaces, \"·\" or \".\"; no \"-\").", papel: "Optional: what you do here, in one line (e.g. \"reviews, tests and reads AWS\")." } },
 };
 const SALA_EN = "Room name or id. Can be omitted if your person is in only one room.";

@@ -15,8 +15,9 @@ const pessoas: PessoaRoster[] = [
   { user_id: CAT, nome: "Cathleen Peji", papel_sala: "membro" },
 ];
 const agentes: AgenteRoster[] = [
+  // o agendado ficou com o nome do app ("Claude"); o interativo se registra como "Claude Code"
   { user_id: ROBERTO, nome: "Claude", declarado: false, papel: null, ultima: "2026-11-09T22:40:00Z" },
-  { user_id: ROBERTO, nome: "Claude·auto", declarado: true, papel: "room checks and short replies, never code", ultima: null },
+  { user_id: ROBERTO, nome: "Claude Code", declarado: true, papel: "writes the code, owns branches and PRs", ultima: null },
   { user_id: CAT, nome: "ChatGPT", declarado: true, papel: "coordinates and runs proposals", ultima: "2026-11-09T22:34:00Z" },
   { user_id: CAT, nome: "Codex", declarado: true, papel: "reviews, tests and reads AWS", ultima: "2026-11-09T22:31:00Z" },
 ];
@@ -35,9 +36,9 @@ describe("identidade do agente", () => {
     expect(codex).toMatchObject({ agente: "Codex", papel: "revisa e testa", declarado: true, origem: "conexao" });
   });
 
-  test("sem nome na conexão, vale o agente da chamada (Claude agendado no mesmo conector do interativo)", () => {
-    expect(resolverAgente("Claude", null, "Claude·auto")).toMatchObject({ agente: "Claude·auto", declarado: true, origem: "chamada" });
-    expect(resolverAgente("Claude", null)).toMatchObject({ agente: "Claude", declarado: false });
+  test("sem nome na conexão, vale o agente da chamada (Claude Code no mesmo conector do Claude agendado)", () => {
+    expect(resolverAgente("Claude", null, "Claude Code")).toMatchObject({ agente: "Claude Code", declarado: true, origem: "chamada" });
+    expect(resolverAgente("Claude", null)).toMatchObject({ agente: "Claude", declarado: false }); // o agendado, sem nada
   });
 
   test("conexão declarada não troca de nome por chamada", () => {
@@ -69,10 +70,26 @@ describe("chamada por @agente", () => {
     expect(chama(t, "Claude", "Roberto", false)).toBe(false);
   });
 
-  test("nome com · ou . conta inteiro: @Claude·auto não chama o Claude, e @Claude não chama o Claude·auto", () => {
+  test("@Claude chama o agendado e @ClaudeCode o interativo, um sem o outro", () => {
+    const sala = agentes.map((a) => a.nome);
+    expect(chama("@Claude check the room", "Claude", "Roberto", false, sala)).toBe(true);
+    expect(chama("@Claude check the room", "Claude Code", "Roberto", false, sala)).toBe(false);
+    expect(chama("@ClaudeCode please write the PR", "Claude Code", "Roberto", false, sala)).toBe(true);
+    expect(chama("@ClaudeCode please write the PR", "Claude", "Roberto", false, sala)).toBe(false);
+  });
+
+  test("@Claude Code escrito à mão, com espaço, chama o Claude Code e não o Claude", () => {
+    const sala = agentes.map((a) => a.nome);
+    expect(chama("@Claude Code please open the PR", "Claude Code", "Roberto", false, sala)).toBe(true);
+    expect(chama("@Claude Code please open the PR", "Claude", "Roberto", false, sala)).toBe(false);
+    // sem um "Claude Code" na sala, "@Claude Coordinate..." é o Claude
+    expect(chama("@Claude Coordinate with Cat", "Claude", "Roberto", false, ["Claude"])).toBe(true);
+    expect(chama("@Claude can you check?", "Claude", "Roberto", false, sala)).toBe(true);
+  });
+
+  test("nome com · ou . conta inteiro", () => {
     expect(chama("@Claude·auto check the room", "Claude·auto", "Roberto", false)).toBe(true);
     expect(chama("@Claude·auto check the room", "Claude", "Roberto", false)).toBe(false);
-    expect(chama("@Claude please write the PR", "Claude·auto", "Roberto", false)).toBe(false);
     expect(chama("@ClaudeAuto?", "Claude·auto", "Roberto", false)).toBe(true);
     expect(chama("done, @Codex.", "Codex", "Cathleen Peji", true)).toBe(true);
   });
@@ -80,7 +97,7 @@ describe("chamada por @agente", () => {
   test("@Agente-Pessoa escolhe de quem é o agente", () => {
     expect(comoChama("@Codex-Cathleen", "Codex", "Cathleen Peji")).toBe("nome");
     expect(comoChama("@Codex-Roberto", "Codex", "Cathleen Peji")).toBe(null);
-    expect(comoChama("@Claude·auto-Roberto", "Claude·auto", "Roberto")).toBe("nome");
+    expect(comoChama("@ClaudeCode-Roberto", "Claude Code", "Roberto")).toBe("nome");
   });
 
   test("@Cathleen chama a pessoa e todos os agentes dela, quando uma pessoa escreve", () => {
@@ -96,7 +113,7 @@ describe("chamada por @agente", () => {
   test("@agentes e @todos continuam chamando todos", () => {
     for (const t of ["@agentes o que acham?", "@agents thoughts?", "@everyone", "@todos"]) {
       expect(comoChama(t, "Codex", "Cathleen Peji")).toBe("coletivo");
-      expect(chama(t, "Claude·auto", "Roberto", false)).toBe(true);
+      expect(chama(t, "Claude Code", "Roberto", false)).toBe(true);
     }
   });
 
@@ -124,13 +141,14 @@ describe("Quem é quem", () => {
   test("a Circular Content mostra 2 pessoas e 4 agentes, cada agente com a sua pessoa", () => {
     expect(grupos.map((g) => g.pessoa.nome)).toEqual(["Roberto", "Cathleen Peji"]);
     expect(grupos.flatMap((g) => g.agentes).length).toBe(4);
-    expect(grupos[0].agentes.map((a) => a.nome).sort()).toEqual(["Claude", "Claude·auto"]);
+    expect(grupos[0].agentes.map((a) => a.nome).sort()).toEqual(["Claude", "Claude Code"]);
     expect(grupos[1].agentes.map((a) => a.nome).sort()).toEqual(["ChatGPT", "Codex"]);
   });
 
   test("o @ de cada agente: curto quando o nome é único, Agente-Pessoa quando se repete", () => {
     expect(grupos[1].agentes.find((a) => a.nome === "Codex")!.chamar).toBe("@Codex");
-    expect(grupos[0].agentes.find((a) => a.nome === "Claude·auto")!.chamar).toBe("@Claude·auto");
+    expect(grupos[0].agentes.find((a) => a.nome === "Claude Code")!.chamar).toBe("@ClaudeCode");
+    expect(grupos[0].agentes.find((a) => a.nome === "Claude")!.chamar).toBe("@Claude");
     const dois = montarRoster(pessoas, [{ user_id: ROBERTO, nome: "Codex" }, { user_id: CAT, nome: "Codex" }]);
     expect(dois.flatMap((g) => g.agentes.map((a) => a.chamar))).toEqual(["@Codex-Roberto", "@Codex-Cathleen"]);
   });
@@ -152,7 +170,7 @@ describe("Quem é quem", () => {
     expect(txt).toContain("- Cathleen Peji (person, @Cathleen also calls their agents) · last active 2026-11-09 22:37 UTC");
     expect(txt).toContain("  - agent Codex (@Codex) · reviews, tests and reads AWS · last active here 2026-11-09 22:31 UTC");
     expect(txt).toContain("  - agent Claude (@Claude) · no name of its own (app name)");
-    expect(txt).toContain("  - agent Claude·auto (@Claude·auto) · room checks and short replies, never code · not active here yet");
+    expect(txt).toContain("  - agent Claude Code (@ClaudeCode) · writes the code, owns branches and PRs · not active here yet");
     expect(rosterTexto(grupos, "pt")).toContain("Quem é quem (gerado pela sala");
   });
 
@@ -172,10 +190,10 @@ describe("Quem é quem", () => {
 describe("selo do agente", () => {
   test("cada agente tem um tom fixo, o mesmo em qualquer lugar", () => {
     expect(tomDoAgente("Codex")).toBe(tomDoAgente("codex"));
-    expect(tomDoAgente("Claude·auto")).toBe(tomDoAgente("ClaudeAuto"));
+    expect(tomDoAgente("Claude Code")).toBe(tomDoAgente("ClaudeCode"));
     expect(tomDoAgente("Codex")).toMatch(/^tom-[1-6]$/);
     // os dois agentes de cada pessoa da Circular Content ficam com tons diferentes
     expect(tomDoAgente("Codex")).not.toBe(tomDoAgente("ChatGPT"));
-    expect(tomDoAgente("Claude·auto")).not.toBe(tomDoAgente("Claude"));
+    expect(tomDoAgente("Claude Code")).not.toBe(tomDoAgente("Claude"));
   });
 });

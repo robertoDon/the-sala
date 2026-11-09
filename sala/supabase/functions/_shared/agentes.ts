@@ -2,7 +2,7 @@
 // Código puro (sem Deno, sem banco): usado pelo servidor dos agentes (mcp), pelos avisos (avisar) e pelo app web,
 // para que os três entendam um @ do mesmo jeito. Os testes ficam em web/src/testes.
 
-/** "José Código" → "josecodigo": compara nomes sem acento, espaço nem símbolo ("Claude·auto" = "ClaudeAuto"). */
+/** "José Código" → "josecodigo": compara nomes sem acento, espaço nem símbolo ("Claude Code" = "ClaudeCode"). */
 export const handle = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
 
 // @agents/@everyone/@all (inglês) valem o mesmo que @agentes/@todos
@@ -11,12 +11,17 @@ export const apelido = (h: string) => ALIAS[h] ?? h;
 const COLETIVAS = new Set(["agentes", "todos"]);
 const RESERVADOS = new Set(["agentes", "agents", "todos", "everyone", "all", "eu", "me", "voce", "you", "pessoa", "person"]);
 
-/** "@Codex", "@Claude·auto", "@Claude-Roberto" (agente-pessoa), "@agentes". O nome pode ter "·" ou "." no meio. */
+/** "@Codex", "@ClaudeCode", "@Claude-Roberto" (agente-pessoa), "@agentes". O nome pode ter "·" ou "." no meio. */
 export const MENCAO = /@([\p{L}\p{N}_]+(?:[·.][\p{L}\p{N}_]+)*)(?:-([\p{L}\p{N}_]+))?/gu;
 
-export type Mencao = { alvo: string; pessoa: string }; // handles; pessoa = "" quando não veio "-Pessoa"
+// handles; pessoa = "" quando não veio "-Pessoa"; seguinte = a palavra logo depois ("@Claude Code" → "code"),
+// para reconhecer nome de agente com espaço escrito à mão
+export type Mencao = { alvo: string; pessoa: string; seguinte: string };
 export const mencoes = (texto: string): Mencao[] =>
-  [...texto.matchAll(MENCAO)].map((m) => ({ alvo: apelido(handle(m[1])), pessoa: m[2] ? handle(m[2]) : "" }));
+  [...texto.matchAll(MENCAO)].map((m) => {
+    const depois = m[2] ? null : texto.slice((m.index ?? 0) + m[0].length).match(/^ ([\p{L}\p{N}_]+)/u);
+    return { alvo: apelido(handle(m[1])), pessoa: m[2] ? handle(m[2]) : "", seguinte: depois ? handle(depois[1]) : "" };
+  });
 
 export const primeiroNome = (nome: string) => (nome ?? "").trim().split(/\s+/)[0] ?? "";
 
@@ -27,12 +32,18 @@ export const primeiroNome = (nome: string) => (nome ?? "").trim().split(/\s+/)[0
  * - "coletivo": @agentes ou @todos;
  * - null: não chama.
  * Quem chama decide o que cada forma vale (agente escrevendo @agentes não acorda ninguém, por exemplo).
+ * `outros`: nomes dos agentes da sala. Com eles, "@Claude Code" (com espaço) chama o Claude Code e não o Claude.
  */
-export function comoChama(texto: string, agente: string, dono: string): "nome" | "pessoa" | "coletivo" | null {
+export function comoChama(texto: string, agente: string, dono: string, outros: string[] = []): "nome" | "pessoa" | "coletivo" | null {
   const a = handle(agente), p = handle(primeiroNome(dono));
   let melhor: "nome" | "pessoa" | "coletivo" | null = null;
   for (const m of mencoes(texto)) {
-    if (m.alvo === a && (!m.pessoa || m.pessoa === p)) return "nome";
+    const longo = m.seguinte ? m.alvo + m.seguinte : "";
+    if (longo && longo === a) return "nome"; // "@Claude Code" para o agente "Claude Code"
+    if (m.alvo === a && (!m.pessoa || m.pessoa === p)) {
+      if (longo && outros.some((o) => handle(o) === longo)) continue; // era o "Claude Code", não o "Claude"
+      return "nome";
+    }
     if (p && m.alvo === p && !m.pessoa) melhor = "pessoa";
     else if (COLETIVAS.has(m.alvo) && !melhor) melhor = "coletivo";
   }
@@ -41,8 +52,8 @@ export function comoChama(texto: string, agente: string, dono: string): "nome" |
 
 /** A mensagem chama este agente? Pessoa chamando: nome, pessoa ou coletivo. Agente chamando: o nome, ou @agentes/@todos
  * (ele lê, mas o despertar decide à parte), nunca só por citar a pessoa dona (pergunta para a pessoa não é para o agente). */
-export function chama(texto: string, agente: string, dono: string, autorEhAgente: boolean) {
-  const c = comoChama(texto, agente, dono);
+export function chama(texto: string, agente: string, dono: string, autorEhAgente: boolean, outros: string[] = []) {
+  const c = comoChama(texto, agente, dono, outros);
   return c === "nome" || c === "coletivo" || (c === "pessoa" && !autorEhAgente);
 }
 
@@ -51,7 +62,7 @@ export function chama(texto: string, agente: string, dono: string, autorEhAgente
 export const NOME_MAX = 24;
 export const PAPEL_MAX = 120;
 
-/** Nome curto que a conexão declara ("Codex", "Claude·auto"). Devolve o nome limpo ou um erro em pt/en. */
+/** Nome curto que a conexão declara ("Codex", "Claude Code"). Devolve o nome limpo ou um erro em pt/en. */
 export function nomeDeAgente(v: unknown): { nome: string } | { erro: [string, string] } {
   const nome = String(v ?? "").normalize("NFC").replace(/\s+/g, " ").trim();
   if (!nome) return { erro: ["Falta o nome do agente.", "Missing the agent name."] };
