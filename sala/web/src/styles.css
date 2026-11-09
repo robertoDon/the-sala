@@ -30,6 +30,8 @@
   --bolha-minha: #EDEDF1;     /* a sua mensagem, à direita */
   --agente: #F3F2FE;          /* fundo do que é de agente */
   --agente-tinta: #4B44C4;
+  /* tom fixo de cada agente (anel do avatar): identifica quem escreveu, não é ação */
+  --tom-1: #4B44C4; --tom-2: #0F7B6C; --tom-3: #A6531F; --tom-4: #9C3D7F; --tom-5: #2F6FB0; --tom-6: #5E7A1F;
   --acento: #5B5BD6;          /* ação e foco; nunca decoração */
   --acento-forte: #4C4CC4;
   --acento-tinta: #FFFFFF;
@@ -65,6 +67,7 @@
     --hover: rgba(255, 255, 255, .05); --hover-forte: rgba(255, 255, 255, .08);
     --bolha: #17181B; --bolha-borda: #222328; --bolha-minha: #222328; --agente: #1B1A31; --agente-tinta: #B9B8FF; --acento: #7273EA; --acento-forte: #8586F2; --acento-tinta: #FFFFFF;
     --erro: #FF8A80; --ok: #4CC38A; --aviso: #F0A54A;
+    --tom-1: #B9B8FF; --tom-2: #5FD4BF; --tom-3: #F2A36B; --tom-4: #E58CC9; --tom-5: #8DBDF2; --tom-6: #B5D36A;
     --sombra: 0 1px 1px -.5px rgba(0, 0, 0, .4), 0 2px 2px -1px rgba(0, 0, 0, .3);
     --sombra-media: 0 0 0 1px rgba(255, 255, 255, .04), 0 1px 1px -.5px rgba(0, 0, 0, .4), 0 3px 3px -1.5px rgba(0, 0, 0, .35), 0 6px 6px -3px rgba(0, 0, 0, .3);
     --sombra-alta: 0 0 0 1px rgba(255, 255, 255, .06), 0 2px 4px -1px rgba(0, 0, 0, .4), 0 8px 16px -4px rgba(0, 0, 0, .45), 0 24px 56px -12px rgba(0, 0, 0, .7);
@@ -78,6 +81,7 @@
   --hover: rgba(255, 255, 255, .05); --hover-forte: rgba(255, 255, 255, .08);
   --bolha: #17181B; --bolha-borda: #222328; --bolha-minha: #222328; --agente: #1B1A31; --agente-tinta: #B9B8FF; --acento: #7273EA; --acento-forte: #8586F2; --acento-tinta: #FFFFFF;
   --erro: #FF8A80; --ok: #4CC38A; --aviso: #F0A54A;
+  --tom-1: #B9B8FF; --tom-2: #5FD4BF; --tom-3: #F2A36B; --tom-4: #E58CC9; --tom-5: #8DBDF2; --tom-6: #B5D36A;
   --sombra: 0 1px 1px -.5px rgba(0, 0, 0, .4), 0 2px 2px -1px rgba(0, 0, 0, .3);
   --sombra-media: 0 0 0 1px rgba(255, 255, 255, .04), 0 1px 1px -.5px rgba(0, 0, 0, .4), 0 3px 3px -1.5px rgba(0, 0, 0, .35), 0 6px 6px -3px rgba(0, 0, 0, .3);
   --sombra-alta: 0 0 0 1px rgba(255, 255, 255, .06), 0 2px 4px -1px rgba(0, 0, 0, .4), 0 8px 16px -4px rgba(0, 0, 0, .45), 0 24px 56px -12px rgba(0, 0, 0, .7);
@@ -268,7 +272,10 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
   background: var(--suave); box-shadow: inset 0 0 0 1px var(--linha); font-size: var(--t1); font-weight: 600; object-fit: cover;
 }
 .avatar-mini { width: 20px; height: 20px; font-size: 11px; }
-.avatar-agente { background: var(--agente); color: var(--agente-tinta); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--agente-tinta) 16%, transparent); }
+.avatar-agente {
+  --tom-agente: var(--agente-tinta);
+  background: color-mix(in srgb, var(--tom-agente) 9%, var(--fundo)); color: var(--tom-agente); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tom-agente) 20%, transparent);
+}
 
 .marca { display: inline-flex; align-items: center; gap: 8px; font: 600 15px var(--display); letter-spacing: -0.02em; color: var(--tinta); }
 .marca svg rect { fill: var(--tinta); }
@@ -388,6 +395,9 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 .sala-titulo h1 { font: 600 15px/1.3 var(--display); letter-spacing: -0.015em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .quem { color: var(--cinza); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .quem svg { vertical-align: -1px; }
+.quem-abrir { all: unset; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 4px; }
+.quem-abrir:hover { color: var(--tinta); }
+.quem-abrir:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
 .sala-topo .btn-convidar { margin: 0 4px 0 8px; }
 
 .convite { display: flex; flex-direction: column; gap: 10px; padding: 16px 24px; background: var(--suave); border-bottom: 1px solid var(--linha); }
@@ -442,7 +452,13 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
   background: var(--suave); box-shadow: inset 0 0 0 1px var(--linha); color: var(--tinta); font-size: 11px; font-weight: 600; letter-spacing: 0;
 }
 .msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.msg-avatar-agente { background: var(--agente); color: var(--agente-tinta); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--agente-tinta) 16%, transparent); }
+.msg-avatar-agente {
+  --tom-agente: var(--agente-tinta);
+  background: color-mix(in srgb, var(--tom-agente) 9%, var(--fundo)); color: var(--tom-agente); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tom-agente) 20%, transparent);
+}
+/* cada agente com o seu tom, sempre o mesmo (vem do nome): Codex e ChatGPT da mesma pessoa não se confundem */
+.tom-1 { --tom-agente: var(--tom-1); } .tom-2 { --tom-agente: var(--tom-2); } .tom-3 { --tom-agente: var(--tom-3); }
+.tom-4 { --tom-agente: var(--tom-4); } .tom-5 { --tom-agente: var(--tom-5); } .tom-6 { --tom-agente: var(--tom-6); }
 .msg:not(.msg-minha) > .msg-linha { padding-left: 32px; }
 .msg:not(.msg-minha) > .reacoes, .msg:not(.msg-minha) > .msg-erro { margin-left: 32px; }
 .msg-bloco > .tarefa-chip:not(.tarefa-chip-minha), .msg-bloco > .respostas:not(.respostas-minha), .msg-bloco > .pedir:not(.respostas-minha) { margin-left: 32px; }
@@ -918,6 +934,10 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 .linha-item .btn-mais { opacity: 0; }
 .linha-item:hover .btn-mais, .linha-item:focus-within .btn-mais, .linha-item .menu-ancora.aberto .btn-mais { opacity: 1; }
 .menu-vazio { width: 28px; flex: none; }
+/* Quem é quem: os agentes de cada pessoa logo abaixo dela, um degrau para dentro */
+.quem-agente { min-height: 44px; padding-left: 28px; }
+.quem-agente .avatar { width: 26px; height: 26px; }
+.quem-agente .linha-titulo, .quem-agente .presenca { white-space: normal; overflow-wrap: anywhere; }
 
 /* convites: título, explicação curta e o link numa caixa com Copiar dentro */
 .convites { display: flex; flex-direction: column; gap: 14px; padding: 2px 8px 10px; }

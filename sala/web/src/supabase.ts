@@ -20,10 +20,18 @@ export type Sala = {
 };
 export type Anexo = { path: string; nome: string; tipo: string; tamanho: number };
 export type ItemPlano = { titulo: string; frente?: string; responsavel?: string; responsavel_agente?: string; prazo?: string; tarefa?: number };
-export type Agente = { user_id: string; nome: string; visto_em: string; ouvindo_ate: string | null; desperta?: boolean };
+// papel e declarado: o agente disse o próprio nome (e o que faz); sem isso, o nome é o do app ("sem nome próprio")
+export type Agente = { user_id: string; nome: string; visto_em: string; ouvindo_ate: string | null; desperta?: boolean; papel?: string | null; declarado?: boolean };
 export type Membro = { user_id: string; papel: "dono" | "membro" | "leitor"; perfis: Perfil | null };
 
 export const abrirConectar = () => window.dispatchEvent(new Event("sala:conectar"));
+
+/** Tom fixo do agente (1 a 6), tirado do nome: o mesmo agente tem sempre a mesma cor, em qualquer sala. */
+export const tomDoAgente = (nome: string) => {
+  let h = 5381; // djb2: separa bem os nomes comuns (Claude, Claude·auto, ChatGPT, Codex caem em tons diferentes)
+  for (const c of nome.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]/g, "")) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0;
+  return `tom-${(h % 6) + 1}`;
+};
 export type Mensagem = {
   id: number;
   sala_id: string;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { abrirConectar, copiarTexto, sb, type Membro, type Sala } from "../supabase";
+import { abrirConectar, copiarTexto, sb, tomDoAgente, type Membro, type Sala } from "../supabase";
+import { montarRoster, type AgenteRoster } from "../../../supabase/functions/_shared/agentes";
 import type { AgenteSala } from "../pages/Sala";
 import { IconeAgente, IconeCheck, IconeFechar, IconeVoltar } from "./Icones";
 import { Menu } from "./Menu";
@@ -11,7 +12,21 @@ import { erro, gravado, locale, t } from "../i18n";
 
 type Historico = { id: number; quem: string | null; agente: string | null; acao: string; detalhe: string | null; em: string };
 
-type Props = { sala: Sala; membros: Membro[]; agentes: AgenteSala[]; eu: string; fechar: () => void; recarregar: () => void; foco?: "contexto"; abrirMemoria?: () => void };
+type Props = { sala: Sala; membros: Membro[]; agentes: AgenteSala[]; eu: string; fechar: () => void; recarregar: () => void; foco?: "contexto" | "quem"; abrirMemoria?: () => void };
+
+// linha do Quem é quem que vem do banco (quem_e_quem): agente = null é a própria pessoa
+type LinhaQuem = { user_id: string; agente: string | null; papel: string | null; declarado: boolean | null; ultima: string | null };
+
+// "agora", "há 5 min", "há 3 h", "ontem", "há 4 dias"
+const haQuanto = (iso: string) => {
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 5) return t("agora", "just now");
+  if (min < 60) return t(`há ${min} min`, `${min} min ago`);
+  const h = Math.round(min / 60);
+  if (h < 24) return t(`há ${h} h`, `${h} h ago`);
+  const d = Math.round(h / 24);
+  return d === 1 ? t("ontem", "yesterday") : t(`há ${d} dias`, `${d} days ago`);
+};
 
 export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, abrirMemoria }: Props) {
   const dono = sala.papel === "dono";
@@ -22,6 +37,21 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
   const link = sala.convite ? `${window.location.origin}/c/${sala.convite}` : "";
   const linkLeitura = sala.convite_leitura ? `${window.location.origin}/c/${sala.convite_leitura}` : "";
   const [historico, setHistorico] = useState<Historico[] | null>(null);
+  // Quem é quem: papel, nome próprio e última atividade nesta sala vêm do banco; presença e "Automático" do tempo real
+  const [linhasQuem, setLinhasQuem] = useState<LinhaQuem[] | null>(null);
+  useEffect(() => {
+    sb.rpc("quem_e_quem", { sala: sala.id }).then(({ data, error }) => setLinhasQuem(error ? null : (data as LinhaQuem[])));
+  }, [sala.id, agentes.length]);
+  useEffect(() => { if (foco === "quem") document.getElementById("quem-e-quem")?.scrollIntoView({ block: "start" }); }, [foco]);
+  const grupos = montarRoster(
+    membros.map((m) => ({ user_id: m.user_id, nome: m.perfis?.nome ?? t("Alguém", "Someone"), papel_sala: m.papel })),
+    [
+      ...(linhasQuem ?? []).filter((l) => l.agente).map((l): AgenteRoster => ({ user_id: l.user_id, nome: l.agente!, papel: l.papel, declarado: !!l.declarado, ultima: l.ultima })),
+      ...agentes.map((a): AgenteRoster => ({ user_id: a.uid, nome: a.nome, papel: a.papel, declarado: a.declarado, ultima: null })),
+    ],
+    Object.fromEntries((linhasQuem ?? []).filter((l) => !l.agente).map((l) => [l.user_id, l.ultima])),
+  );
+  const presencaDe = (uid: string, nome: string) => agentes.find((a) => a.uid === uid && a.nome === nome);
   const [aprovacoes, setAprovacoes] = useState<number | null>(null);
   useEffect(() => { sb.from("salas").select("aprovacoes").eq("id", sala.id).maybeSingle().then(({ data }) => setAprovacoes((data as { aprovacoes: number } | null)?.aprovacoes ?? 1)); }, [sala.id]);
   const mudarAprovacoes = async (n: number) => {
@@ -163,49 +193,55 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
         </div>
       </section>
 
-      <section className="painel-lista">
-        <h3 className="secao-rotulo">{t("Pessoas", "People")} <span>{membros.length}</span></h3>
-        <ul className="linhas">
-          {membros.map((m) => (
-            <li key={m.user_id} className="linha-item">
-              {m.perfis?.avatar ? <img className="avatar" src={m.perfis.avatar} alt="" referrerPolicy="no-referrer" /> : <span className="avatar">{m.perfis?.nome?.[0]}</span>}
-              <span className="linha-texto">
-                <span className="linha-titulo">{m.perfis?.nome}</span>
-                {m.user_id === eu && <span className="presenca">{t("você", "you")}</span>}
-              </span>
-              {papelDe(m)}
-              {dono && m.papel !== "dono" ? (
-                <Menu rotulo={t(`Ações para ${m.perfis?.nome}`, `Actions for ${m.perfis?.nome}`)} itens={[
-                  m.papel === "leitor" ? { rotulo: t("Liberar para escrever", "Allow writing"), acao: () => mudarPapel(m, "membro") }
-                    : { rotulo: t("Deixar só ler", "Make viewer"), acao: () => mudarPapel(m, "leitor") },
-                  m.papel !== "leitor" && { rotulo: t("Tornar dono", "Make room owner"), acao: () => tornarDono(m), confirmar: t(`${m.perfis?.nome} também passa a cuidar da sala: muda nome e instruções, convida, tira pessoas e pode apagar a sala.`, `${m.perfis?.nome} will also become a room owner: they can rename the room, edit its instructions, invite and remove people, and delete the room.`) },
-                  { rotulo: t("Tirar da sala", "Remove from room"), acao: () => remover(m), perigo: true, confirmar: t("Os agentes dessa pessoa também saem.", "Their agents will be removed too.") },
-                ]} />
-              ) : <span className="menu-vazio" aria-hidden />}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="painel-lista">
+      <section className="painel-lista" id="quem-e-quem">
         <div className="secao-rotulo secao-rotulo-acao">
-          <h3>{t("Agentes", "Agents")} <span>{agentes.length}</span></h3>
-          <button className="link nota" onClick={abrirConectar}>{t("Conectar o meu", "Connect your agent")}</button>
+          <h3>{t("Quem é quem", "Who's who")} <span>{membros.length + grupos.reduce((n, g) => n + g.agentes.length, 0)}</span></h3>
+          <button className="link nota" onClick={abrirConectar}>{t("Conectar o meu agente", "Connect your agent")}</button>
         </div>
-        {agentes.length ? (
-          <ul className="linhas">
-            {agentes.map((a) => (
-              <li key={`${a.nome}|${a.uid}`} className="linha-item">
-                <span className="avatar avatar-agente"><IconeAgente tamanho={16} /></span>
+        <p className="nota secao-nota">{t("A sala monta sozinha: cada agente aparece com o nome que a conexão dele declara. Para chamar, use o @ de cada um; o @ de uma pessoa chama também os agentes dela.",
+          "The room builds this on its own: each agent shows up with the name its connection declares. To call one, use its @; a person's @ also calls their agents.")}</p>
+        <ul className="linhas quem-lista">
+          {grupos.map((g) => {
+            const m = membros.find((x) => x.user_id === g.pessoa.user_id)!;
+            return [
+              <li key={m.user_id} className="linha-item">
+                {m.perfis?.avatar ? <img className="avatar" src={m.perfis.avatar} alt="" referrerPolicy="no-referrer" /> : <span className="avatar">{m.perfis?.nome?.[0]}</span>}
                 <span className="linha-texto">
-                  <span className="linha-titulo">{(() => { const de = membros.find((m) => m.user_id === a.uid)?.perfis?.nome?.split(" ")[0] ?? "?"; return t(`${a.nome} de ${de}`, `${de}'s ${a.nome}`); })()}</span>
-                  {a.presenca && <span className={`presenca ${a.presenca.ativo ? "presenca-ativa" : ""}`}>{a.presenca.ativo && <span className="ponto ponto-mini" aria-hidden />}{a.presenca.texto}</span>}
+                  <span className="linha-titulo">{m.perfis?.nome} <span className="nota">@{g.pessoa.nome.split(" ")[0]}</span></span>
+                  <span className="presenca">{m.user_id === eu ? t("você", "you") : t("pessoa", "person")}{g.ultima ? ` · ${t("escreveu aqui", "wrote here")} ${haQuanto(g.ultima)}` : ""}</span>
                 </span>
-                {a.sozinho && <span className="pilula" title={t("Responde sozinho quando chamado", "Replies on its own when mentioned")}>{t("Automático", "Auto-reply")}</span>}
-              </li>
-            ))}
-          </ul>
-        ) : <p className="nota secao-nota">{t("Nenhum agente ainda. Cada pessoa conecta o seu, com a assinatura que já tem.", "No agents yet. Everyone connects their own, using the subscription they already have.")}</p>}
+                {papelDe(m)}
+                {dono && m.papel !== "dono" ? (
+                  <Menu rotulo={t(`Ações para ${m.perfis?.nome}`, `Actions for ${m.perfis?.nome}`)} itens={[
+                    m.papel === "leitor" ? { rotulo: t("Liberar para escrever", "Allow writing"), acao: () => mudarPapel(m, "membro") }
+                      : { rotulo: t("Deixar só ler", "Make viewer"), acao: () => mudarPapel(m, "leitor") },
+                    m.papel !== "leitor" && { rotulo: t("Tornar dono", "Make room owner"), acao: () => tornarDono(m), confirmar: t(`${m.perfis?.nome} também passa a cuidar da sala: muda nome e instruções, convida, tira pessoas e pode apagar a sala.`, `${m.perfis?.nome} will also become a room owner: they can rename the room, edit its instructions, invite and remove people, and delete the room.`) },
+                    { rotulo: t("Tirar da sala", "Remove from room"), acao: () => remover(m), perigo: true, confirmar: t("Os agentes dessa pessoa também saem.", "Their agents will be removed too.") },
+                  ]} />
+                ) : <span className="menu-vazio" aria-hidden />}
+              </li>,
+              ...g.agentes.map((a) => {
+                const pr = presencaDe(a.user_id, a.nome);
+                const detalhe = [
+                  a.papel || (!a.declarado ? t("sem nome próprio (nome do app)", "no name of its own (app name)") : ""),
+                  a.ultima ? `${t("falou aqui", "spoke here")} ${haQuanto(a.ultima)}` : pr?.presenca?.texto ?? t("ainda não falou aqui", "hasn't spoken here yet"),
+                ].filter(Boolean).join(" · ");
+                return (
+                  <li key={`${a.nome}|${a.user_id}`} className="linha-item quem-agente">
+                    <span className={`avatar avatar-agente ${tomDoAgente(a.nome)}`}><IconeAgente tamanho={16} /></span>
+                    <span className="linha-texto">
+                      <span className="linha-titulo">{a.nome} <span className="nota">{a.chamar}</span></span>
+                      <span className="presenca" title={pr?.presenca?.texto}>{pr?.presenca?.ativo && <span className="ponto ponto-mini" aria-hidden />}{detalhe}</span>
+                    </span>
+                    {pr?.sozinho && <span className="pilula" title={t("Responde sozinho quando chamado", "Replies on its own when mentioned")}>{t("Automático", "Auto-reply")}</span>}
+                    <span className="menu-vazio" aria-hidden />
+                  </li>
+                );
+              }),
+            ];
+          })}
+        </ul>
+        {!grupos.some((g) => g.agentes.length) && <p className="nota secao-nota">{t("Nenhum agente ainda. Cada pessoa conecta o seu, com a assinatura que já tem.", "No agents yet. Everyone connects their own, using the subscription they already have.")}</p>}
       </section>
 
       {link && (

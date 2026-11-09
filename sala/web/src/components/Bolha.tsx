@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { Mensagem } from "../supabase";
+import { tomDoAgente, type Mensagem } from "../supabase";
 import { IconeAgente, IconeJoinha, IconeReagir, IconeCopiar, IconeCheck, IconeDecisao, IconeFechar, IconeLapis, IconeLixo, IconeProposta, IconeRecusa, IconeResponder, IconeTarefa } from "./Icones";
 import { Texto } from "./Texto";
 import { Anexos } from "./Anexos";
@@ -62,6 +62,7 @@ type Props = {
   nomeDe?: (uid: string | null) => string; // responsáveis dos itens de um plano
   abrirTarefas?: () => void;
   avatar?: string | null; // foto da pessoa (agente usa sempre o anel)
+  papelAgente?: string | null; // o que o agente faz aqui, em uma linha (Quem é quem)
   tempo?: string; // quanto o agente levou para responder à pergunta ("40 s")
   // resposta de agente: 👍 / 👎 viram reação (o agente lê); "o que faltou" vira resposta que chama o agente
   avaliar?: { dono: string; corrigir: (nota: string) => void };
@@ -169,9 +170,9 @@ export function Bolha(p: Props) {
         <header className="msg-meta">
           {m.agente ? (
             <>
-              <span className="msg-avatar msg-avatar-agente" aria-hidden><IconeAgente tamanho={13} /></span>
-              <strong className="msg-selo">{m.agente}</strong>
-              <span className="msg-de">{tr(`de ${nome}`, `${nome}'s agent`)}</span>
+              <span className={`msg-avatar msg-avatar-agente ${tomDoAgente(m.agente)}`} aria-hidden><IconeAgente tamanho={13} /></span>
+              <strong className="msg-selo" title={p.papelAgente ?? undefined}>{m.agente}</strong>
+              <span className="msg-de" title={tr(`Agente de ${nome}`, `${nome}'s agent`)}>· {nome}</span>
             </>
           ) : minha ? (
             <strong>{tr("Você", "You")}</strong>

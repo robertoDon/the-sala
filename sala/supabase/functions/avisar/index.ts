@@ -14,6 +14,7 @@
 // Deploy com verify_jwt = false (confere o segredo x-aviso).
 
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
+import { comoChama, mencoes as mencoesDe } from "../_shared/agentes.ts";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -101,11 +102,9 @@ async function empurrar(i: { endpoint: string; p256dh: string; auth: string }, d
 
 // ---------------------------------------------------------------- quem avisar
 
+// @Codex, @Claude·auto, @Claude-Ana, @Ana, @agentes, @todos (e @agents, @everyone, @all): regra comum em _shared/agentes.ts
 const handle = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
-// @agents/@everyone/@all (inglês) valem o mesmo que @agentes/@todos
-const ALIAS: Record<string, string> = { agents: "agentes", everyone: "todos", all: "todos" };
-const apelido = (h: string) => ALIAS[h] ?? h;
-const mencoes = (t: string) => [...t.matchAll(/@([\p{L}\p{N}_]+)(?:-[\p{L}\p{N}_]+)?/gu)].map((m) => apelido(handle(m[1])));
+const mencoes = (t: string) => mencoesDe(t).map((m) => m.alvo);
 
 // textos que o banco grava em português, para quem usa em inglês
 const emIngles = (t: string) =>
@@ -154,18 +153,15 @@ Deno.serve(async (req) => {
   }
 
   const ditas = mencoes(m.texto);
-  const ditasCompletas = [...m.texto.matchAll(/@([\p{L}\p{N}_]+)(?:-([\p{L}\p{N}_]+))?/gu)].map((x) => [apelido(handle(x[1])), x[2] ? handle(x[2]) : ""]);
-  // agentes de quem está na sala: "@Claude-Ana" ou "@agentes" chamam o agente, e a pessoa dona dele é avisada
+  // agentes de quem está na sala: "@Codex", "@Claude-Ana" ou "@agentes" chamam o agente, e a pessoa dona dele é avisada
   const { data: agentesSala } = await db.from("agentes").select("user_id, nome, desperta").in("user_id", membros.map((x: any) => x.user_id));
-  const agenteChamado = (uid: string, primeiro: string): string | null => {
+  const agenteChamado = (uid: string, nomePessoa: string): string | null => {
     // quem responde sozinho não precisa que a pessoa toque para pedir
     const meus = (agentesSala ?? []).filter((a) => a.user_id === uid && !a.desperta);
-    for (const [a, p] of ditasCompletas) {
-      // @agentes escrito por um agente não acorda ninguém: senão vira uma corrente de avisos
-      if (a === "agentes" && meus.length && !m.agente) return meus.length === 1 ? meus[0].nome : TODOS;
-      const ag = meus.find((x) => handle(x.nome) === a);
-      if (ag && (!p || p === primeiro)) return ag.nome;
-    }
+    const porNome = meus.find((x) => comoChama(m.texto, x.nome, nomePessoa) === "nome");
+    if (porNome) return porNome.nome;
+    // @agentes escrito por um agente não acorda ninguém: senão vira uma corrente de avisos
+    if (ditas.includes("agentes") && meus.length && !m.agente) return meus.length === 1 ? meus[0].nome : TODOS;
     return null;
   };
   const autorNome = (m.autor as any)?.nome ?? "";
@@ -180,7 +176,7 @@ Deno.serve(async (req) => {
     if (pref === "nada") return false;
     const meu = handle((x.perfis?.nome ?? "").split(" ")[0]);
     if (!m.agente || m.user_id !== x.user_id) {
-      const ag = agenteChamado(x.user_id, meu);
+      const ag = agenteChamado(x.user_id, x.perfis?.nome ?? "");
       if (ag) chamadoDe.set(x.user_id, ag);
     }
     if (pref === "tudo") return true;
@@ -291,7 +287,6 @@ async function despertar(id: number, so: { user_id: string; agente: string } | n
   const ouve = (uid: string, nome: string) => (ouvindo ?? []).some((a) => a.user_id === uid && a.nome === nome && a.ouvindo_ate && new Date(a.ouvindo_ate).getTime() > Date.now());
   const pessoa = new Map<string, { nome: string; idioma: string | null }>((membros ?? []).map((x: any) => [x.user_id, { nome: x.perfis?.nome ?? "", idioma: x.perfis?.idioma ?? null }]));
 
-  const chamadas = [...m.texto.matchAll(/@([\p{L}\p{N}_]+)(?:-([\p{L}\p{N}_]+))?/gu)].map((x) => [apelido(handle(x[1])), x[2] ? handle(x[2]) : ""]);
   let dono: { user_id: string; agente: string | null } | null = null;
   if (m.tipo === "decisao" && m.responde_a) {
     const { data: p } = await db.from("mensagens").select("user_id, agente").eq("id", m.responde_a).maybeSingle();
@@ -302,12 +297,12 @@ async function despertar(id: number, so: { user_id: string; agente: string } | n
     if (m.agente && m.user_id === d.user_id && m.agente === d.agente) return false; // ele mesmo escreveu
     if (ouve(d.user_id, d.agente)) return false; // já está ouvindo a sala (Claude Code no computador)
     if (dono && dono.user_id === d.user_id && dono.agente === d.agente) return true;
-    const primeiro = handle((pessoa.get(d.user_id)?.nome ?? "").split(" ")[0]);
-    return chamadas.some(([a, p]) => {
-      if (a === handle(d.agente)) return !p || p === primeiro;
-      if (m.agente) return false; // agente chamando @agentes/@todos não acorda ninguém
-      return a === "agentes" || a === "todos";
-    });
+    // pelo nome (@Codex, @Codex-Cathleen) acorda sempre; @Cathleen, @agentes e @todos só quando uma pessoa escreveu
+    // (agente chamando a pessoa ou todo mundo não acorda ninguém: senão vira corrente)
+    const como = comoChama(m.texto, d.agente, pessoa.get(d.user_id)?.nome ?? "");
+    if (como === "nome") return true;
+    if (m.agente) return false;
+    return como === "coletivo" || como === "pessoa";
   });
   if (!alvos.length) return new Response("nada");
 
@@ -319,21 +314,23 @@ async function despertar(id: number, so: { user_id: string; agente: string } | n
     const texto = en
       ? `The Sala · room "${sala}" (id ${m.sala_id}) · message #${m.id} from ${quem}` +
         (m.tipo === "decisao" ? ` · decision on proposal #${m.responde_a}: ${m.estado === "aprovada" ? "APPROVED" : m.estado === "ajuste" ? "ADJUSTMENT REQUESTED" : "DECLINED"}` : "") +
-        `\nExcerpt: ${limpo(emIngles(m.texto), 400)}`
+        `\nExcerpt: ${limpo(emIngles(m.texto), 400)}` +
+        `\nYou answer as ${d.agente}: if this connection doesn't have that name yet, call registrar_agente with nome "${d.agente}" first.`
       : `The Sala · sala "${sala}" (id ${m.sala_id}) · mensagem #${m.id} de ${quem}` +
         (m.tipo === "decisao" ? ` · decisão sobre a proposta #${m.responde_a}: ${m.estado === "aprovada" ? "APROVADA" : m.estado === "ajuste" ? "PEDIDO DE AJUSTE" : "RECUSADA"}` : "") +
-        `\nTrecho: ${limpo(m.texto, 400)}`;
+        `\nTrecho: ${limpo(m.texto, 400)}` +
+        `\nVocê responde como ${d.agente}: se esta conexão ainda não tem esse nome, chame registrar_agente com nome "${d.agente}" antes.`;
     let status = 0, erro: string | null = null;
     if (d.evento) {
       const motivo = m.tipo === "decisao" ? "decisao" : "chamado";
       const dados = {
         sala_id: m.sala_id, sala, mensagem: m.id, autor: quem, motivo, trecho: limpo(en ? emIngles(m.texto) : m.texto, 400),
         instrucao: en
-          ? `Use ler_mensagens on room ${m.sala_id} and reply to message #${m.id} with enviar_mensagem (responde_a=${m.id}).` +
+          ? `You answer as ${d.agente} (if this connection doesn't have that name yet, call registrar_agente with nome "${d.agente}" first). Use ler_mensagens on room ${m.sala_id} and reply to message #${m.id} with enviar_mensagem (responde_a=${m.id}).` +
             (motivo === "decisao" ? (m.estado === "ajuste"
               ? ` It's an adjustment request on your proposal: fix what the note asks, check with the other agents if it touches their part, and resend once with substitui=${m.responde_a}.`
               : " It's a decision on your proposal: follow it and tell the room what you did.") : "")
-          : `Use ler_mensagens na sala ${m.sala_id} e responda à mensagem #${m.id} com enviar_mensagem (responde_a=${m.id}).` +
+          : `Você responde como ${d.agente} (se esta conexão ainda não tem esse nome, chame registrar_agente com nome "${d.agente}" antes). Use ler_mensagens na sala ${m.sala_id} e responda à mensagem #${m.id} com enviar_mensagem (responde_a=${m.id}).` +
             (motivo === "decisao" ? (m.estado === "ajuste"
               ? ` É um pedido de ajuste na sua proposta: corrija o que a nota pede, confirme com os outros agentes se mexer na parte deles e reenvie uma vez com substitui=${m.responde_a}.`
               : " É uma decisão sobre a sua proposta: siga-a e conte na sala o que fez.") : ""),

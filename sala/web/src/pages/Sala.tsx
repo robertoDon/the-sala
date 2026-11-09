@@ -16,7 +16,8 @@ import { Ata } from "../components/Ata";
 import { PainelSala } from "../components/PainelSala";
 import { Minimapa } from "../components/Minimapa";
 import { abrirComandos } from "../components/Comandos";
-import { MENCAO_COLETIVA, chamaAgentes, chamaTodos, handle } from "../components/Texto";
+import { MENCAO_COLETIVA, chamaTodos, handle } from "../components/Texto";
+import { comoChama, MENCAO } from "../../../supabase/functions/_shared/agentes";
 import { definirIdiomaConversa, erro, idioma, locale, naConversa, t, tc } from "../i18n";
 import {
   IconeAbrir, IconeAjustes, IconeAgente, IconeBusca, IconeCheck, IconeClipe, IconeCopiar, IconeTarefa, IconeColunas, IconeConvite, IconeDecisao, IconePlugue, IconeProposta, IconeVoltar, Marcador, IconeBiblioteca, IconePainel, IconeMais3,
@@ -56,8 +57,8 @@ const deQuem = (agente: string, pessoa: string) => t(`${agente} de ${pessoa}`, `
 const ouvindoAgora = (texto?: string) => texto === "ouvindo agora" || texto === "listening now";
 const PAGINA = 200;
 
-export type AgenteSala = { nome: string; uid: string; presenca: { ativo: boolean; texto: string } | null; sozinho?: boolean };
-type Painel = null | "ajustes" | "contexto" | "decisoes" | "busca" | "tarefas" | "biblioteca" | "memoria" | "painel";
+export type AgenteSala = { nome: string; uid: string; presenca: { ativo: boolean; texto: string } | null; sozinho?: boolean; papel?: string | null; declarado?: boolean };
+type Painel = null | "ajustes" | "contexto" | "quem" | "decisoes" | "busca" | "tarefas" | "biblioteca" | "memoria" | "painel";
 
 export default function SalaPage() {
   const { id = "" } = useParams();
@@ -125,7 +126,7 @@ export default function SalaPage() {
     const mapa = new Map<string, AgenteSala>();
     const ids = new Set(membros.map((m) => m.user_id));
     presencas.filter((a) => ids.has(a.user_id) && Date.now() - new Date(a.visto_em).getTime() < 30 * 864e5)
-      .forEach((a) => mapa.set(`${a.nome}|${a.user_id}`, { nome: a.nome, uid: a.user_id, presenca: presenca(a), sozinho: !!a.desperta }));
+      .forEach((a) => mapa.set(`${a.nome}|${a.user_id}`, { nome: a.nome, uid: a.user_id, presenca: presenca(a), sozinho: !!a.desperta, papel: a.papel ?? null, declarado: !!a.declarado }));
     msgs?.forEach((m) => m.agente && ids.has(m.user_id) && !mapa.has(`${m.agente}|${m.user_id}`) &&
       mapa.set(`${m.agente}|${m.user_id}`, { nome: m.agente, uid: m.user_id, presenca: null }));
     return [...mapa.values()];
@@ -139,7 +140,10 @@ export default function SalaPage() {
 
   const sugestoes = useMemo<Sugestao[]>(() => [
     { handle: tc("agentes", "agents"), rotulo: t("Todos os agentes da sala respondem", "All agents in the room reply"), agente: true },
-    ...agentes.map((a) => ({ handle: `${a.nome.replace(/\s/g, "")}-${primeiro(a.uid)}`, rotulo: deQuem(a.nome, nome(a.uid)), agente: true })),
+    ...agentes.map((a) => {
+      const repete = agentes.some((b) => b.uid !== a.uid && handle(b.nome) === handle(a.nome));
+      return { handle: `${a.nome.replace(/\s/g, "")}${repete ? `-${primeiro(a.uid)}` : ""}`, rotulo: `${deQuem(a.nome, nome(a.uid))}${a.papel ? ` · ${a.papel}` : ""}`, agente: true };
+    }),
     ...membros.filter((m) => m.user_id !== eu).map((m) => ({ handle: (m.perfis?.nome ?? "").split(" ")[0], rotulo: m.perfis?.nome ?? "" })),
     { handle: tc("todos", "everyone"), rotulo: t("Todo mundo, pessoas e agentes", "Everyone: people and agents"), apelidos: idioma() === "en" ? ["all"] : undefined },
   ], [agentes, membros, eu, nome, primeiro]);
@@ -496,11 +500,14 @@ export default function SalaPage() {
   const chamadosTodos = (m: Mensagem) => {
     // vale quando outra pessoa chama o meu agente e também quando eu mesmo chamo; não quando um agente meu escreveu
     if (m.apagada || m.tipo === "decisao" || (m.user_id === eu && m.agente) || m.id < 0) return [];
-    const ditas = [...m.texto.matchAll(/@([\p{L}\p{N}_]+)(?:-([\p{L}\p{N}_]+))?/gu)].map((x) => [handle(x[1]), x[2] ? handle(x[2]) : ""]);
     const ja = new Set((respostas.get(m.id) ?? []).filter((r) => r.user_id === eu).map((r) => r.agente));
     reacoes.filter((r) => r.mensagem_id === m.id && r.user_id === eu && r.agente).forEach((r) => ja.add(r.agente));
-    return meusAgentes.filter((a) => !ja.has(a.nome) && ditas.some(([h, p]) =>
-      chamaAgentes(h) || chamaTodos(h) || (h === handle(a.nome) && (!p || p === meuPrimeiro))));
+    // pelo nome (@Codex), pela minha pessoa (@Roberto, quando outra pessoa escreve) ou @agentes/@todos
+    return meusAgentes.filter((a) => {
+      if (ja.has(a.nome)) return false;
+      const c = comoChama(m.texto, a.nome, nome(eu));
+      return c === "nome" || c === "coletivo" || (c === "pessoa" && !m.agente && m.user_id !== eu);
+    });
   };
   const copiarPedido = async (texto: string, chave: string) => {
     if (await copiarTexto(texto)) { setCopiouPedido(chave); setTimeout(() => setCopiouPedido(null), 1500); }
@@ -567,13 +574,13 @@ export default function SalaPage() {
     const res = new Map<string, AgenteSala>();
     const recentes = msgs.slice(-5).filter((q) => q.tipo !== "decisao" && !q.apagada && q.id > 0 && Date.now() - new Date(q.criada_em).getTime() < 4 * 60_000);
     for (const q of recentes) {
-      const ditas = [...q.texto.matchAll(/@([\p{L}\p{N}_]+)(?:-([\p{L}\p{N}_]+))?/gu)].map((x) => [handle(x[1]), x[2] ? handle(x[2]) : ""]);
-      if (!ditas.length) continue;
+      if (!q.texto.match(MENCAO)) continue;
       const ja = new Set(msgs.filter((x) => x.id > q.id && x.agente).map((x) => `${x.agente}|${x.user_id}`));
       reacoes.filter((r) => r.mensagem_id === q.id && r.agente).forEach((r) => ja.add(`${r.agente}|${r.user_id}`));
       for (const a of agentes) {
         if (!ouvindoAgora(a.presenca?.texto) || ja.has(`${a.nome}|${a.uid}`) || (q.agente === a.nome && q.user_id === a.uid)) continue;
-        if (ditas.some(([h, d]) => chamaAgentes(h) || chamaTodos(h) || (h === handle(a.nome) && (!d || d === handle(primeiro(a.uid)))))) res.set(`${a.nome}|${a.uid}`, a);
+        const c = comoChama(q.texto, a.nome, nome(a.uid));
+        if (c === "nome" || c === "coletivo" || (c === "pessoa" && !q.agente)) res.set(`${a.nome}|${a.uid}`, a);
       }
     }
     return [...res.values()];
@@ -629,9 +636,11 @@ export default function SalaPage() {
             <div className="sala-titulo">
               <h1>{sala?.nome ?? " "}</h1>
               <p className="quem">
+                <button type="button" className="quem-abrir" onClick={() => setPainel((p) => (p === "quem" ? null : "quem"))} title={t("Quem é quem", "Who's who")} aria-expanded={painel === "quem"}>
                 {membros.map((m) => m.perfis?.nome?.split(" ")[0]).filter(Boolean).join(", ")}
                 {agentes.length > 0 && <> · <IconeAgente tamanho={12} /> {agentes.length} {agentes.length === 1 ? t("agente", "agent") : t("agentes", "agents")}</>}
                 {ouvindo.length > 0 && <> · <span className="ponto ponto-mini" aria-hidden /> {ouvindo.length === 1 ? deQuem(ouvindo[0].nome, primeiro(ouvindo[0].uid)) : ouvindo.length} {t("ouvindo", "listening")}</>}
+                </button>
               </p>
             </div>
             <button data-guia="decisoes" className={`btn-icone ${painel === "decisoes" ? "ativo" : ""}`} onClick={() => setPainel((p) => (p === "decisoes" ? null : "decisoes"))}
@@ -662,7 +671,7 @@ export default function SalaPage() {
             <button className="btn-icone so-celular" onClick={abrirComandos} aria-label={t("Mais: painel, biblioteca, busca, ajustes", "More: dashboard, library, search, settings")}>
               <IconeMais3 />
             </button>
-            <button className={`btn-icone some-celular ${painel === "ajustes" || painel === "contexto" ? "ativo" : ""}`} onClick={() => setPainel((p) => (p === "ajustes" || p === "contexto" ? null : "ajustes"))}
+            <button className={`btn-icone some-celular ${painel === "ajustes" || painel === "contexto" || painel === "quem" ? "ativo" : ""}`} onClick={() => setPainel((p) => (p === "ajustes" || p === "contexto" || p === "quem" ? null : "ajustes"))}
               aria-expanded={painel === "ajustes"} aria-label={t("Ajustes da sala", "Room settings")} title={t("Ajustes da sala", "Room settings")}>
               <IconeAjustes />
             </button>
@@ -785,7 +794,7 @@ export default function SalaPage() {
                     minha={minhaPessoa} continua={continua} chamaMim={chamaMim} destaque={destaque === m.id}
                     autorDe={(id) => { const x = porId.get(id); return x ? autor(x) : null; }}
                     tarefaDe={(id) => tarefas?.find((x) => x.id === id)?.titulo ?? null} abrirTarefas={() => setPainel("tarefas")}
-                    aprovacao={aprovacaoDe(m)} nomeDe={nome}
+                    aprovacao={aprovacaoDe(m)} nomeDe={nome} papelAgente={m.agente ? agentes.find((a) => a.nome === m.agente && a.uid === m.user_id)?.papel : undefined}
                     decisor={m.decidida_por ? (m.decidida_por === eu ? t("você", "you") : nome(m.decidida_por)) : undefined}
                     citacao={m.responde_a && !emSequencia ? { id: m.responde_a, autor: citada ? autor(citada) : t("Mensagem anterior", "Earlier message"), texto: citada ? (citada.apagada ? t("Mensagem apagada.", "Message deleted.") : umaLinha(naConversa(citada.texto), 120)) : "" } : null}
                     responder={m.id > 0 && !leitor ? () => responder(m) : undefined}
@@ -903,9 +912,9 @@ export default function SalaPage() {
           )}
         </div>
 
-        {(painel === "ajustes" || painel === "contexto") && sala && (
+        {(painel === "ajustes" || painel === "contexto" || painel === "quem") && sala && (
           <Ajustes sala={sala} membros={membros} agentes={agentes} eu={eu} fechar={() => setPainel(null)} recarregar={recarregar}
-            foco={painel === "contexto" ? "contexto" : undefined} abrirMemoria={() => setPainel("memoria")} />
+            foco={painel === "contexto" ? "contexto" : painel === "quem" ? "quem" : undefined} abrirMemoria={() => setPainel("memoria")} />
         )}
         {painel === "decisoes" && sala && (
           <Decisoes salaId={sala.id} salaNome={sala.nome} versao={versaoDecisoes} autor={autor} nome={nome}

@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 // Markdown leve, montado como elementos React (nunca innerHTML): parágrafos, listas, citação,
 // bloco de código, `código`, **negrito**, *itálico*, links e @menções.
 
-export const handle = (s: string) =>
-  s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+// handle: a mesma comparação de nomes do servidor ("Claude·auto" = "ClaudeAuto")
+export { handle } from "../../../supabase/functions/_shared/agentes";
 
 // Menções coletivas, em português e em inglês: @agentes = @agents; @todos = @everyone = @all.
 export const AGENTES = ["agentes", "agents"];
@@ -17,7 +17,7 @@ export const chamaTodos = (h: string) => TODOS.includes(h);
 export const MENCAO_COLETIVA = new RegExp(`@(${[...AGENTES, ...TODOS].join("|")})(?![\\p{L}\\p{N}_])`, "iu");
 
 const INLINE =
-  /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\*[^*\s\n][^*\n]*\*|(?<![\p{L}\p{N}_])_[^_\s\n][^_\n]*_(?![\p{L}\p{N}_]))|(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])|(@[\p{L}\p{N}_]+(?:-[\p{L}\p{N}_]+)?)|((?<![\p{L}\p{N}_&/])#\d{1,7}(?![\p{L}\p{N}_]))/gu;
+  /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\*[^*\s\n][^*\n]*\*|(?<![\p{L}\p{N}_])_[^_\s\n][^_\n]*_(?![\p{L}\p{N}_]))|(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])|(@[\p{L}\p{N}_]+(?:[·.][\p{L}\p{N}_]+)*(?:-[\p{L}\p{N}_]+)?)|((?<![\p{L}\p{N}_&/])#\d{1,7}(?![\p{L}\p{N}_]))/gu;
 
 // "#142" no texto (agentes citam mensagens pelo número): vira um link com o nome de quem escreveu
 // só vira link quando é uma mensagem desta sala; "#12" de uma tarefa ou de outro lugar fica como texto

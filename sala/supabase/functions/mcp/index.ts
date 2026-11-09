@@ -6,7 +6,9 @@
 //   Sem token → 401 com WWW-Authenticate apontando para /.well-known/oauth-protected-resource,
 //   o cliente descobre o servidor de autorização (Supabase Auth), registra-se sozinho (DCR) e
 //   manda a pessoa para a tela de consentimento da Sala. O agente fala em nome dessa pessoa,
-//   com o nome do app que conectou ("Claude", "ChatGPT").
+//   com o nome do app que conectou ("Claude", "ChatGPT"), a não ser que a conexão declare um nome próprio:
+//   ?agente=Codex&papel=... no endereço, cabeçalhos X-Sala-Agente / X-Sala-Papel, ou registrar_agente na sessão.
+//   Sem nada disso, cada ferramenta aceita `agente` na própria chamada (Quem é quem, migração 033).
 //
 // API (agentes de terminal, com chave de agente "sala_..."):
 //   GET  /api/instrucoes                     como usar, com os comandos prontos
@@ -27,6 +29,7 @@
 // Deploy com verify_jwt = false (a função valida o token ela mesma).
 
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
+import { chama, handle, montarRoster, nomeDeAgente, nomeDoApp, papelDeAgente, resolverAgente, rosterTexto, type AgenteRoster, type PessoaRoster } from "../_shared/agentes.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const BASE = `${SUPABASE_URL}/functions/v1/mcp`;
@@ -40,7 +43,7 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers":
-    "authorization, content-type, accept, mcp-session-id, mcp-protocol-version, x-client-info, apikey",
+    "authorization, content-type, accept, mcp-session-id, mcp-protocol-version, x-client-info, apikey, x-sala-agente, x-sala-papel",
   "Access-Control-Expose-Headers": "mcp-session-id, www-authenticate",
 };
 
@@ -59,7 +62,12 @@ class Falha extends Error {
 // ---------------------------------------------------------------- quem está falando
 
 type Lingua = "pt" | "en";
-type Quem = { userId: string; pessoa: string; agente: string; lingua: Lingua };
+// agente = o nome com que ele escreve (declarado pela conexão ou, sem isso, o nome do app)
+// conexao = onde registrar_agente guarda o nome: a sessão MCP ou a chave de agente
+type Quem = {
+  userId: string; pessoa: string; agente: string; lingua: Lingua;
+  app: string; papel: string | null; declarado: boolean; origem: "app" | "conexao" | "chamada"; conexao: string | null; fixo: boolean;
+};
 /** texto no idioma da pessoa dona do agente */
 const tr = (q: Quem | undefined, pt: string, en: string) => (q?.lingua === "en" ? en : pt);
 
@@ -74,33 +82,47 @@ function payload(jwt: string): Record<string, unknown> {
   } catch { return {}; }
 }
 
-// "Claude", "ChatGPT", "Claude Code"... a partir do nome que o app deu ao se registrar
-function nomeDoAgente(cliente: string | null): string {
-  const c = (cliente ?? "").trim();
-  const l = c.toLowerCase();
-  if (l.includes("claude code")) return "Claude Code";
-  if (l.includes("claude")) return "Claude";
-  if (l.includes("chatgpt") || l.includes("openai")) return "ChatGPT";
-  if (l.includes("gemini")) return "Gemini";
-  if (l.includes("codex")) return "Codex";
-  if (l.includes("cursor")) return "Cursor";
-  return c.slice(0, 40) || "Agente";
-}
-
 const cacheClientes = new Map<string, string>();
 const ultimaPresenca = new Map<string, number>();
+const cacheConexoes = new Map<string, { agente: string; papel: string | null; ate: number }>();
+
+// nome guardado por registrar_agente nesta conexão (cache curto: a mesma sessão faz várias chamadas seguidas)
+async function nomeDaConexao(chave: string | null) {
+  if (!chave) return null;
+  const c = cacheConexoes.get(chave);
+  if (c && c.ate > Date.now()) return c;
+  const { data } = await db.from("conexoes").select("agente, papel").eq("chave", chave).maybeSingle();
+  if (!data) { cacheConexoes.delete(chave); return null; }
+  const v = { agente: data.agente as string, papel: (data.papel as string | null) ?? null, ate: Date.now() + 60_000 };
+  cacheConexoes.set(chave, v);
+  db.from("conexoes").update({ usada_em: new Date().toISOString() }).eq("chave", chave).then(() => {}, () => {});
+  return v;
+}
+
+// presença: a sala mostra "visto agora" / "ouvindo" e o Quem é quem. No máximo uma escrita por minuto por agente.
+function marcarPresenca(q: Quem, forcar = false) {
+  const chave = `${q.userId}|${q.agente}`;
+  if (!forcar && Date.now() - (ultimaPresenca.get(chave) ?? 0) <= 60_000) return;
+  ultimaPresenca.set(chave, Date.now());
+  // nome do app não apaga um nome próprio nem um papel já declarados com o mesmo nome
+  const linha: Record<string, unknown> = { user_id: q.userId, nome: q.agente, visto_em: new Date().toISOString(), app: q.app };
+  if (q.declarado) { linha.declarado = true; if (q.papel) linha.papel = q.papel; }
+  db.from("agentes").upsert(linha).then(() => {}, () => {});
+}
 
 async function autenticar(req: Request): Promise<Quem | null> {
   const h = req.headers.get("authorization") ?? "";
   const token = h.replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;
 
-  let userId: string, agente: string;
+  let userId: string, app: string, conexao: string | null = null, nomeChave: string | null = null;
   if (token.startsWith("sala_")) {
     const { data } = await db.from("chaves").select("id, user_id, agente").eq("hash", await sha256(token)).maybeSingle();
     if (!data) return null;
     userId = data.user_id;
-    agente = data.agente;
+    app = data.agente;
+    nomeChave = data.agente; // a pessoa deu o nome ao criar a chave: já é um nome próprio
+    conexao = `chave:${data.id}`;
     db.from("chaves").update({ usada_em: new Date().toISOString() }).eq("id", data.id).then(() => {});
   } else {
     const { data, error } = await db.auth.getUser(token);
@@ -110,19 +132,47 @@ async function autenticar(req: Request): Promise<Quem | null> {
     if (!cid) throw new Falha("Este token é de uma pessoa, não de um agente. Conecte pelo app do agente ou use uma chave de agente. / This token belongs to a person, not an agent. Connect from the agent's app or use an agent key.", 403);
     if (!cacheClientes.has(cid)) {
       const { data: nome } = await db.rpc("nome_do_cliente", { cliente: cid });
-      cacheClientes.set(cid, nomeDoAgente(nome as string | null));
+      cacheClientes.set(cid, nomeDoApp(nome as string | null));
     }
-    agente = cacheClientes.get(cid)!;
+    app = cacheClientes.get(cid)!;
+    const sessao = (req.headers.get("mcp-session-id") ?? "").trim();
+    if (/^[A-Za-z0-9._-]{8,200}$/.test(sessao)) conexao = `sessao:${sessao}`;
   }
   const { data: p } = await db.from("perfis").select("nome, idioma").eq("id", userId).maybeSingle();
-  // presença: a sala mostra "visto agora" / "ouvindo". No máximo uma escrita por minuto por agente.
-  const chavePresenca = `${userId}|${agente}`;
-  if (Date.now() - (ultimaPresenca.get(chavePresenca) ?? 0) > 60_000) {
-    ultimaPresenca.set(chavePresenca, Date.now());
-    db.from("agentes").upsert({ user_id: userId, nome: agente, visto_em: new Date().toISOString() }).then(() => {});
-  }
   const lingua: Lingua = p?.idioma === "en" ? "en" : "pt";
-  return { userId, pessoa: p?.nome ?? (lingua === "en" ? "Someone" : "Alguém"), agente, lingua };
+
+  // nome declarado pela conexão: endereço (?agente=), cabeçalho, registrar_agente nesta sessão/chave, nome da chave
+  const url = new URL(req.url);
+  const pedido = req.headers.get("x-sala-agente") ?? url.searchParams.get("agente");
+  const papelPedido = papelDeAgente(req.headers.get("x-sala-papel") ?? url.searchParams.get("papel"));
+  let declarada: { agente: string; papel: string | null } | null = null;
+  let fixo = false; // declarado no endereço ou no cabeçalho: registrar_agente não troca
+  if (pedido) {
+    const n = nomeDeAgente(pedido);
+    if ("erro" in n) throw new Falha(lingua === "en" ? n.erro[1] : n.erro[0]);
+    declarada = { agente: n.nome, papel: papelPedido };
+    fixo = true;
+  } else {
+    const reg = await nomeDaConexao(conexao);
+    declarada = reg ?? (nomeChave ? { agente: nomeChave, papel: null } : null);
+  }
+  const id = resolverAgente(app, declarada);
+  if ("erro" in id) throw new Falha(lingua === "en" ? id.erro[1] : id.erro[0]);
+  const q: Quem = { userId, pessoa: p?.nome ?? (lingua === "en" ? "Someone" : "Alguém"), agente: id.agente, lingua,
+    app, papel: id.papel, declarado: id.declarado, origem: id.origem, conexao, fixo };
+  marcarPresenca(q);
+  return q;
+}
+
+/** `agente` passado na chamada: vale quando a conexão não declarou nenhum (Claude agendado e interativo no mesmo conector). */
+function comAgenteDaChamada(q: Quem, porChamada: unknown): Quem {
+  if (porChamada === undefined || porChamada === null || !String(porChamada).trim()) return q;
+  const id = resolverAgente(q.app, q.declarado ? { agente: q.agente, papel: q.papel } : null, porChamada);
+  if ("erro" in id) throw new Falha(tr(q, id.erro[0], id.erro[1]));
+  if (id.agente === q.agente) return q;
+  const novo: Quem = { ...q, agente: id.agente, papel: id.papel, declarado: id.declarado, origem: id.origem };
+  marcarPresenca(novo);
+  return novo;
 }
 
 // ---------------------------------------------------------------- salas e mensagens
@@ -301,7 +351,7 @@ async function enviar(q: Quem, sala: string, e: Envio): Promise<Msg> {
     for (let i = recentes.length - 1; i >= 0; i--) {
       const m = recentes[i];
       if (minha(q, m)) break;
-      if (!m.apagada && m.tipo !== "decisao" && meChamou(q, m.texto)) { responde = m.id; break; }
+      if (!m.apagada && m.tipo !== "decisao" && meChamou(q, m)) { responde = m.id; break; }
     }
   }
   const { data, error } = await db.from("mensagens")
@@ -337,16 +387,8 @@ async function esperar(q: Quem, sala: string, depois: number, segundos: number) 
   }
 }
 
-// @Claude, @Claude-Roberto, @agentes, @todos
-const handle = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
-function meChamou(q: Quem, texto: string) {
-  for (const [, a, p] of texto.matchAll(/@([\p{L}\p{N}_]+)(?:-([\p{L}\p{N}_]+))?/gu)) {
-    const h = handle(a);
-    if (["agentes", "todos", "agents", "everyone", "all"].includes(h)) return true;
-    if (h === handle(q.agente) && (!p || handle(p) === handle(q.pessoa.split(" ")[0]))) return true;
-  }
-  return false;
-}
+// @Codex, @Claude·auto, @Claude-Roberto, @Roberto (a pessoa e os agentes dela), @agentes, @todos: regra comum em _shared/agentes.ts
+const meChamou = (q: Quem, m: { texto: string; agente: string | null }) => chama(m.texto, q.agente, q.pessoa, !!m.agente);
 
 const quemEscreveu = (m: Msg, q?: Quem) => (m.agente
   ? tr(q, `${m.agente} de ${m.autor?.nome ?? "?"}`, `${m.agente} (${m.autor?.nome ?? "?"}'s agent)`)
@@ -398,7 +440,7 @@ const formatar = (todas: Msg[], q?: Quem) => {
   const ms = todas.filter((m) => !(m.apagada && m.agente)); // envio por engano que o agente apagou: some
   return ms.length
     ? ms.map((m) => {
-      const chamou = q && !minha(q, m) && !m.apagada && meChamou(q, m.texto) ? tr(q, "  ← chamou você", "  ← called you") : "";
+      const chamou = q && !minha(q, m) && !m.apagada && meChamou(q, m) ? tr(q, "  ← chamou você", "  ← called you") : "";
       const resp = m.responde_a && m.tipo !== "decisao" ? tr(q, ` · responde a #${m.responde_a}`, ` · replies to #${m.responde_a}`) : "";
       const ed = m.editada_em && !m.apagada ? tr(q, " · (editada)", " · (edited)") : "";
       const anexos = (m.anexos ?? []).map((a) => `\n📎 ${a.nome} (${a.tipo}, ${tamanho(a.tamanho)}) · ler_arquivo: ${a.path}`).join("");
@@ -477,10 +519,30 @@ const jeitoDaSala = (s: Sala, q?: Quem) => {
 
 // conector com a lista de ferramentas velha (ChatGPT guarda a lista até alguém atualizar): o agente percebe e avisa a pessoa
 const ferramentasDaVersao = (q?: Quem) => {
-  const nomes = TOOLS_PT.map((x) => x.name).filter((n) => n !== "search" && n !== "fetch").join(", ");
+  const nomes = TOOLS.map((x) => x.name).filter((n) => n !== "search" && n !== "fetch").join(", ");
   return tr(q, `Ferramentas desta versão (${SERVIDOR.version}): ${nomes}. Se alguma não aparece para você, não improvise: peça à sua pessoa para atualizar o conector The Sala nas configurações do app dela.`,
     `Tools in this version (${SERVIDOR.version}): ${nomes}. If any of them is missing on your side, don't improvise: ask your person to refresh The Sala connector in their app settings.`);
 };
+
+// ---------------------------------------------------------------- Quem é quem
+
+type LinhaQuem = { user_id: string; pessoa: string; papel_sala: "dono" | "membro" | "leitor"; agente: string | null; papel: string | null; declarado: boolean | null; ultima: string | null };
+async function quemEQuem(sala: string) {
+  const { data, error } = await db.rpc("quem_e_quem", { sala });
+  let linhas = (data ?? []) as LinhaQuem[];
+  if (error) {
+    // banco sem a migração 033: só as pessoas, para criar_tarefa e o @Agente-Pessoa seguirem funcionando
+    const { data: mb } = await db.from("membros").select("user_id, papel, perfis(nome)").eq("sala_id", sala);
+    linhas = ((mb ?? []) as unknown as { user_id: string; papel: LinhaQuem["papel_sala"]; perfis: { nome: string } | null }[])
+      .map((m) => ({ user_id: m.user_id, pessoa: m.perfis?.nome ?? "?", papel_sala: m.papel, agente: null, papel: null, declarado: null, ultima: null }));
+  }
+  const pessoas: PessoaRoster[] = [], ultimaPessoa: Record<string, string | null> = {}, agentes: AgenteRoster[] = [];
+  for (const l of linhas) {
+    if (l.agente === null) { pessoas.push({ user_id: l.user_id, nome: l.pessoa, papel_sala: l.papel_sala }); ultimaPessoa[l.user_id] = l.ultima; }
+    else agentes.push({ user_id: l.user_id, nome: l.agente, papel: l.papel, declarado: !!l.declarado, ultima: l.ultima });
+  }
+  return montarRoster(pessoas, agentes, ultimaPessoa);
+}
 
 async function cabecalhoCurto(s: Sala, q: Quem) {
   const [ps, ts] = await Promise.all([propostas(s.id, 15), tarefas(s.id)]);
@@ -493,15 +555,19 @@ async function cabecalhoCurto(s: Sala, q: Quem) {
 }
 
 async function cabecalho(s: Sala, q?: Quem) {
-  const [ps, ts, bs, ax] = await Promise.all([propostas(s.id, 15), q ? tarefas(s.id) : Promise.resolve([] as Tarefa[]),
-    biblioteca(s.id).catch(() => [] as ItemBib[]), anexosRecentes(s.id).catch(() => [] as Msg[])]);
+  const [ps, ts, bs, ax, quem] = await Promise.all([propostas(s.id, 15), q ? tarefas(s.id) : Promise.resolve([] as Tarefa[]),
+    biblioteca(s.id).catch(() => [] as ItemBib[]), anexosRecentes(s.id).catch(() => [] as Msg[]), quemEQuem(s.id).catch(() => [])]);
+  const roster = rosterTexto(quem, q?.lingua ?? "pt");
+  const voce = q ? `\n${tr(q, `Você aqui: ${q.agente}, agente de ${q.pessoa}`, `You here: ${q.agente}, ${q.pessoa}'s agent`)}${q.papel ? ` (${q.papel})` : ""}.${q.declarado ? ""
+    : tr(q, ` Esta conexão não tem nome próprio (sai como "${q.agente}", o nome do app). Se a sua pessoa usa mais de um agente neste app, diga quem você é com registrar_agente.`,
+      ` This connection has no name of its own (it shows as "${q.agente}", the app name). If your person uses more than one agent in this app, say who you are with registrar_agente.`)}` : "";
   const r = registro(ps, q);
   const t = q ? listaTarefas(ts, q, 3) : "";
   const b = listaBiblioteca(bs, q, true);
   const a = listaAnexos(ax, bs, q);
   const ins = s.contexto?.trim() ? `\n${tr(q, "Instruções da sala (das pessoas)", "Room instructions (from the people)")}: ${s.contexto.trim()}` : "";
   const mem = `\n${tr(q, "Memória da sala (mantida pelos agentes; atualize com atualizar_memoria)", "Room memory (kept by the agents; update it with atualizar_memoria)")}:${s.memoria?.trim() ? `\n${s.memoria.trim()}` : tr(q, " (vazia: comece a preencher)", " (empty: start filling it in)")}`;
-  return `${tr(q, "Sala", "Room")} "${s.nome}"\n${idiomaDaSala(s, q)}\n${jeitoDaSala(s, q)}\n${ferramentasDaVersao(q)}${ins}${mem}${r ? `\n${r}` : ""}${t ? `\n${t}` : ""}${b ? `\n${b}` : ""}${a ? `\n${a}` : ""}`;
+  return `${tr(q, "Sala", "Room")} "${s.nome}"${roster ? `\n${roster}` : ""}${voce}\n${idiomaDaSala(s, q)}\n${jeitoDaSala(s, q)}\n${ferramentasDaVersao(q)}${ins}${mem}${r ? `\n${r}` : ""}${t ? `\n${t}` : ""}${b ? `\n${b}` : ""}${a ? `\n${a}` : ""}`;
 }
 
 // ---------------------------------------------------------------- memória
@@ -753,22 +819,29 @@ function listaTarefas(ts: Tarefa[], q: Quem, feitas = 5) {
   return linhas.join("\n");
 }
 
-// "eu"/vazio → o próprio agente; "Ana" → pessoa; "Claude-Ana" → agente de alguém
+// "eu"/vazio → o próprio agente; "Ana" → pessoa; "Codex" → o agente com esse nome na sala; "Claude-Ana" → agente de alguém
 async function acharResponsavel(q: Quem, sala: string, ref?: string): Promise<{ responsavel: string; responsavel_agente: string | null }> {
   const r = (ref ?? "").trim().replace(/^@/, "");
   if (!r || ["eu", "voce", "você", "mim", "me", "you", "myself"].includes(r.toLowerCase())) return { responsavel: q.userId, responsavel_agente: q.agente };
-  const { data } = await db.from("membros").select("user_id, perfis(nome)").eq("sala_id", sala);
-  const membros = (data ?? []) as unknown as { user_id: string; perfis: { nome: string } | null }[];
-  const [a, b] = r.split("-");
-  const pessoa = (h: string) => membros.find((m) => handle((m.perfis?.nome ?? "").split(" ")[0]) === handle(h));
+  const grupos = await quemEQuem(sala);
+  const pessoa = (h: string) => grupos.find((g) => handle(g.pessoa.nome.split(" ")[0]) === handle(h) || handle(g.pessoa.nome) === handle(h));
+  const i = r.lastIndexOf("-");
+  const [a, b] = i > 0 ? [r.slice(0, i), r.slice(i + 1)] : [r, ""];
   if (b) {
-    const m = pessoa(b);
-    if (m) return { responsavel: m.user_id, responsavel_agente: a.trim() };
+    const g = pessoa(b);
+    if (g) {
+      const ag = g.agentes.find((x) => handle(x.nome) === handle(a));
+      return { responsavel: g.pessoa.user_id, responsavel_agente: ag?.nome ?? a.trim() };
+    }
   }
-  const m = pessoa(r);
-  if (m) return { responsavel: m.user_id, responsavel_agente: null };
-  throw new Falha(tr(q, `Não achei "${ref}" na sala. Use o primeiro nome da pessoa (Ana) ou Agente-Pessoa (Claude-Ana).`,
-    `Couldn't find "${ref}" in the room. Use the person's first name (Ana) or Agent-Person (Claude-Ana).`));
+  const g = pessoa(r);
+  if (g) return { responsavel: g.pessoa.user_id, responsavel_agente: null };
+  const ags = grupos.flatMap((x) => x.agentes.filter((ag) => handle(ag.nome) === handle(r)).map((ag) => ({ uid: x.pessoa.user_id, nome: ag.nome, dono: x.pessoa.nome })));
+  if (ags.length === 1) return { responsavel: ags[0].uid, responsavel_agente: ags[0].nome };
+  if (ags.length > 1) throw new Falha(tr(q, `"${ref}" é o nome de mais de um agente aqui: use ${ags.map((x) => `${x.nome.replace(/\s/g, "")}-${x.dono.split(" ")[0]}`).join(" ou ")}.`,
+    `"${ref}" is the name of more than one agent here: use ${ags.map((x) => `${x.nome.replace(/\s/g, "")}-${x.dono.split(" ")[0]}`).join(" or ")}.`));
+  throw new Falha(tr(q, `Não achei "${ref}" na sala. Use o primeiro nome da pessoa (Ana), o nome do agente (Codex) ou Agente-Pessoa (Claude-Ana).`,
+    `Couldn't find "${ref}" in the room. Use the person's first name (Ana), the agent's name (Codex) or Agent-Person (Claude-Ana).`));
 }
 
 // "Roberto, David" → as pessoas da sala que podem aprovar
@@ -952,7 +1025,8 @@ WHEN TO TALK
 
 ROLES AND HANDOFFS
 - Every room has a lead: the agent the instructions or the memory ("Roles in practice") name as lead. Without one, the lead is the agent of the person who made the request. The lead talks to the people: sums up, asks, proposes. The others do their part and hand it back to the lead.
-- Handing work to another agent: one line per ask, "@Agent-Person: what · what to deliver". Replying to an agent: just the result or the problem, no audience.
+- Handing work to another agent: one line per ask, "@Agent: what · what to deliver" (the @ shown in "Who's who"; @Agent-Person when two people have agents with the same name). Replying to an agent: just the result or the problem, no audience.
+- The room already shows who wrote each message (agent · person). Don't introduce yourself or tag your text ("Codex here", "[Claude·auto]"). If your person uses more than one agent in the same app, say who you are once at the start with registrar_agente.
 - When an exchange between agents ends, the lead closes it for the people in up to 3 lines: what's done, what's left and whose it is.
 - Need a person (a decision, access, a file)? Put it on the first line with @Name and the exact question ("@Cathleen: can you refresh the dev SSO? That's the only thing missing."). Don't bury it.
 - When you deliver, end with the next step and whose it is, in one line. A person just says "hi"? Answer briefly with what's waiting for them.
@@ -980,7 +1054,7 @@ WORK AND TOOLS
 - Long rooms: what holds is the instructions, memory, decisions, tasks and library. After the first read, use ler_mensagens with depois; for older things use busca or antes; don't ask people to repeat. A new version of a file goes under the same file name, with one line saying what changed.
 - A request that takes more than a few minutes: send one line saying what you'll deliver and start right away. While you work, check the room (depois) every few minutes and before delivering; new calls for you are yours in this same session: one delivery, not one per call.
 - People rate you with reactions. 👎 means it didn't help: if someone replied saying what was missing, fix it replying to that; if not, ask in one line. 👍 means the answer and its format worked: keep doing it that way.
-- To call someone, use @Name (a person) or @Agent-Person (someone's agent). When in doubt, ask your person before answering on their behalf.`;
+- To call someone, use @Name (a person, which also calls their agents) or @Agent (one agent; @Agent-Person if the name repeats). When in doubt, ask your person before answering on their behalf.`;
   return `Você está no The Sala: salas onde pessoas e os agentes delas trabalham juntos.${q ? ` Você é "${q.agente}", agente de ${q.pessoa}.` : ""}
 
 COMO FALAR (isto vale mais que o resto)
@@ -1001,7 +1075,8 @@ QUANDO FALAR
 
 PAPÉIS E PASSAGEM
 - Toda sala tem um condutor: o agente que as instruções ou a memória ("Papéis na prática") apontam como líder. Sem isso, conduz o agente da pessoa que fez o pedido. O condutor fala com as pessoas: resume, pergunta, propõe. Os outros fazem a sua parte e devolvem ao condutor.
-- Passar trabalho para outro agente: uma linha por pedido, "@Agente-Pessoa: o quê · o que entregar". Respondendo a um agente: só o resultado ou o problema, sem plateia.
+- Passar trabalho para outro agente: uma linha por pedido, "@Agente: o quê · o que entregar" (o @ que aparece no "Quem é quem"; @Agente-Pessoa quando duas pessoas têm agentes com o mesmo nome). Respondendo a um agente: só o resultado ou o problema, sem plateia.
+- A sala já mostra quem escreveu cada mensagem (agente · pessoa). Não se apresente nem ponha etiqueta no texto ("Codex aqui", "[Claude·auto]"). Se a sua pessoa usa mais de um agente no mesmo app, diga quem você é uma vez, no começo, com registrar_agente.
 - Quando uma troca entre agentes termina, quem conduz fecha para as pessoas em até 3 linhas: o que ficou pronto, o que falta e de quem.
 - Precisa de uma pessoa (decisão, acesso, arquivo)? Ponha na primeira linha, com @Nome e a pergunta exata ("@Cathleen: renova o SSO do dev? É só isso que falta."). Não enterre no meio.
 - Ao entregar, termine com o próximo passo e de quem é, numa linha. A pessoa só disse "oi"? Responda curto com o que está esperando por ela.
@@ -1029,7 +1104,7 @@ TRABALHO E FERRAMENTAS
 - Sala longa: o que vale são as instruções, a memória, as decisões, as tarefas e a biblioteca. Depois da primeira leitura, use ler_mensagens com depois; para coisa antiga, busca ou antes; não peça para repetirem. Versão nova de um arquivo vai com o mesmo nome, com uma linha dizendo o que mudou.
 - Pedido que leva mais que alguns minutos: mande uma linha dizendo o que vai entregar e comece em seguida. Enquanto trabalha, olhe a sala (depois) a cada poucos minutos e antes de entregar; chamadas novas para você são suas nesta mesma sessão: uma entrega, não uma por chamada.
 - As pessoas avaliam com reações. 👎 quer dizer que não ajudou: se alguém respondeu dizendo o que faltou, corrija respondendo a isso; se não, pergunte em uma linha. 👍 quer dizer que a resposta e o formato funcionaram: continue assim.
-- Para chamar alguém, use @Nome (pessoa) ou @Agente-Pessoa (agente de alguém). Na dúvida, pergunte à sua pessoa antes de responder em nome dela.`;
+- Para chamar alguém, use @Nome (a pessoa, que chama também os agentes dela) ou @Agente (um agente só; @Agente-Pessoa se o nome se repete). Na dúvida, pergunte à sua pessoa antes de responder em nome dela.`;
 }
 
 async function instrucoes(q: Quem, chave: string) {
@@ -1382,7 +1457,25 @@ const TOOLS_PT = [
     },
     annotations: { readOnlyHint: true },
   },
+  {
+    name: "registrar_agente",
+    description: "Diz à Sala quem você é nesta conexão: um nome curto de agente (ex.: \"Codex\", \"Claude·auto\") e, se quiser, o seu papel em uma linha. Vale para o resto desta sessão: as suas mensagens, propostas e tarefas saem como \"Nome · Pessoa\" e @Nome chama só você. Use quando a sua pessoa tem mais de um agente no mesmo app; não precisa se apresentar no texto.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        nome: { type: "string", description: "Nome curto do agente (até 24 caracteres: letras, números, espaço, \"·\" ou \".\"; sem \"-\")." },
+        papel: { type: "string", description: "Opcional: o que você faz aqui, em uma linha (ex.: \"revisa, testa e lê a AWS\")." },
+      },
+      required: ["nome"],
+    },
+  },
 ];
+
+// `agente` em toda ferramenta: para quando a conexão não declarou nome (dois agentes da mesma pessoa no mesmo conector)
+const AGENTE_ARG = { type: "string", description: "Opcional: o seu nome de agente nesta chamada (ex.: \"Claude·auto\"), quando a conexão não declarou um (registrar_agente, ?agente= no endereço). Sem ele, você sai com o nome do app." };
+const AGENTE_EN = "Optional: your agent name for this call (e.g. \"Claude·auto\"), when the connection hasn't declared one (registrar_agente, ?agente= in the URL). Without it, you show up with the app name.";
+const TOOLS = TOOLS_PT.map((t) => (t.name === "search" || t.name === "fetch" || t.name === "registrar_agente" ? t
+  : { ...t, inputSchema: { ...t.inputSchema, properties: { ...((t.inputSchema as any).properties ?? {}), agente: AGENTE_ARG } } }));
 
 // As mesmas ferramentas, descritas em inglês para quem usa a Sala em inglês (os nomes não mudam).
 const EN: Record<string, { d: string; p?: Record<string, string> }> = {
@@ -1435,15 +1528,17 @@ const EN: Record<string, { d: string; p?: Record<string, string> }> = {
   tirar_biblioteca: { d: "Removes an item from the room library (item N). It's recorded in the room history.", p: { item: "The item number (item N)." } },
   esperar_mensagens: { d: "Waits up to ~50 s for a new message from another person or agent and returns the new ones. Call it again with `depois` = the last id you got to follow the conversation.",
     p: { depois: "Last id you saw. 0 = from now on." } },
+  registrar_agente: { d: "Tells the Sala who you are on this connection: a short agent name (e.g. \"Codex\", \"Claude·auto\") and, optionally, your role in one line. It holds for the rest of this session: your messages, proposals and tasks show as \"Name · Person\" and @Name calls only you. Use it when your person has more than one agent in the same app; no need to introduce yourself in the text.",
+    p: { nome: "Short agent name (up to 24 characters: letters, digits, spaces, \"·\" or \".\"; no \"-\").", papel: "Optional: what you do here, in one line (e.g. \"reviews, tests and reads AWS\")." } },
 };
 const SALA_EN = "Room name or id. Can be omitted if your person is in only one room.";
 
 function ferramentas(q: Quem) {
-  if (q.lingua !== "en") return TOOLS_PT;
-  return TOOLS_PT.map((t) => {
+  if (q.lingua !== "en") return TOOLS;
+  return TOOLS.map((t) => {
     const e = EN[t.name];
     const props = Object.fromEntries(Object.entries((t.inputSchema as any).properties ?? {}).map(([k, v]: [string, any]) =>
-      [k, { ...v, description: k === "sala" ? SALA_EN : e?.p?.[k] ?? v.description }]));
+      [k, { ...v, description: k === "sala" ? SALA_EN : k === "agente" ? AGENTE_EN : e?.p?.[k] ?? v.description }]));
     return { ...t, description: e?.d ?? t.description, inputSchema: { ...t.inputSchema, properties: props } };
   });
 }
@@ -1488,7 +1583,34 @@ async function abrir(q: Quem, id: string) {
   throw new Falha(tr(q, "Id inválido. Use o id devolvido pelo search.", "Invalid id. Use an id returned by search."));
 }
 
+async function registrarAgente(q: Quem, a: any) {
+  const n = nomeDeAgente(a?.nome);
+  if ("erro" in n) throw new Falha(tr(q, n.erro[0], n.erro[1]));
+  const papel = papelDeAgente(a?.papel);
+  if (q.fixo && handle(n.nome) !== handle(q.agente))
+    throw new Falha(tr(q, `O nome desta conexão ("${q.agente}") vem do endereço do conector ou do cabeçalho X-Sala-Agente; troque lá.`,
+      `This connection's name ("${q.agente}") comes from the connector URL or the X-Sala-Agente header; change it there.`));
+  if (!q.conexao && !q.fixo)
+    throw new Falha(tr(q, `Este app não manda sessão MCP, então o nome não fica guardado na conexão. Passe agente="${n.nome}" em cada chamada, ou ponha ?agente=${encodeURIComponent(n.nome)} no fim do endereço do conector.`,
+      `This app doesn't send an MCP session, so the name can't be kept on the connection. Pass agente="${n.nome}" on each call, or add ?agente=${encodeURIComponent(n.nome)} to the end of the connector URL.`));
+  const agora = new Date().toISOString();
+  if (q.conexao && !q.fixo) {
+    const { error } = await db.from("conexoes").upsert({ chave: q.conexao, user_id: q.userId, agente: n.nome, papel, usada_em: agora });
+    if (error) throw new Falha(error.message);
+    cacheConexoes.set(q.conexao, { agente: n.nome, papel, ate: Date.now() + 60_000 });
+    // sessões esquecidas saem depois de 30 dias (chaves ficam enquanto a chave existir)
+    db.from("conexoes").delete().like("chave", "sessao:%").lt("usada_em", new Date(Date.now() - 30 * 864e5).toISOString()).then(() => {}, () => {});
+  }
+  const novo: Quem = { ...q, agente: n.nome, papel: papel ?? (handle(n.nome) === handle(q.agente) ? q.papel : null), declarado: true, origem: "conexao" };
+  if (papel) await db.from("agentes").upsert({ user_id: q.userId, nome: n.nome, papel, declarado: true, app: q.app, visto_em: agora });
+  else marcarPresenca(novo, true);
+  return tr(q, `Pronto: nesta conexão você é ${n.nome}${papel ? ` (${papel})` : ""}, agente de ${q.pessoa}. As suas mensagens saem como "${n.nome} · ${q.pessoa}" e @${n.nome.replace(/\s/g, "")} chama só você. Não precisa se apresentar no texto.`,
+    `Done: on this connection you are ${n.nome}${papel ? ` (${papel})` : ""}, ${q.pessoa}'s agent. Your messages show as "${n.nome} · ${q.pessoa}" and @${n.nome.replace(/\s/g, "")} calls only you. No need to introduce yourself in the text.`);
+}
+
 async function chamar(q: Quem, nome: string, a: any): Promise<string | Conteudo[]> {
+  if (nome === "registrar_agente") return await registrarAgente(q, a);
+  q = comAgenteDaChamada(q, a?.agente);
   switch (nome) {
     case "search":
       return JSON.stringify(await buscar(q, String(a.query ?? "")));
@@ -1675,8 +1797,8 @@ class ErroRpc extends Error {
 const catalogo = (q: Quem) => [{
   name: EVENTO,
   description: tr(q,
-    "Chamaram você numa sala do The Sala (@Agente, @Agente-Pessoa, @agentes ou @todos), ou as pessoas decidiram uma proposta sua. Ao receber: use ler_mensagens na sala do evento e responda com enviar_mensagem, passando responde_a com o número da mensagem.",
-    "Someone called you in a The Sala room (@Agent, @Agent-Person, @agents or @everyone), or people decided on one of your proposals. When it arrives: use ler_mensagens on the event's room and reply with enviar_mensagem, passing responde_a with the message number."),
+    "Chamaram você numa sala do The Sala (@Agente, @Agente-Pessoa, @Pessoa, @agentes ou @todos), ou as pessoas decidiram uma proposta sua. Ao receber: use ler_mensagens na sala do evento e responda com enviar_mensagem, passando responde_a com o número da mensagem.",
+    "Someone called you in a The Sala room (@Agent, @Agent-Person, @Person, @agents or @everyone), or people decided on one of your proposals. When it arrives: use ler_mensagens on the event's room and reply with enviar_mensagem, passing responde_a with the message number."),
   delivery: ["webhook"],
   inputSchema: {
     type: "object",
@@ -1779,7 +1901,7 @@ async function desinscrever(q: Quem, p: any) {
 // manda versão, cliente e capacidades em cada pedido (_meta) e começa por server/discover. Na nova, todo resultado
 // leva resultType, e as listas levam dicas de cache.
 const VERSOES = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVIDOR = { name: "sala", title: "The Sala", version: "4.32.0" };
+const SERVIDOR = { name: "sala", title: "The Sala", version: "4.33.0" };
 const versaoModerna = (msg: any): string | undefined => msg?.params?._meta?.["io.modelcontextprotocol/protocolVersion"];
 
 async function mcp(q: Quem, msg: any) {
@@ -1886,7 +2008,11 @@ Deno.serve(async (req) => {
         if (!q) return text(`The Sala — servidor MCP. Adicione esta URL como conector no Claude, no ChatGPT ou no Gemini CLI.\nThe Sala — MCP server. Add this URL as a connector in Claude, ChatGPT or Gemini CLI.\n${APP}\n`);
         return new Response(null, { status: 405, headers: CORS });
       }
-      if (req.method === "DELETE") return new Response(null, { status: 204, headers: CORS });
+      if (req.method === "DELETE") {
+        // fim da sessão MCP: o nome registrado nela vai junto
+        if (q?.conexao?.startsWith("sessao:")) { cacheConexoes.delete(q.conexao); await db.from("conexoes").delete().eq("chave", q.conexao); }
+        return new Response(null, { status: 204, headers: CORS });
+      }
       if (!q) {
         console.log(JSON.stringify({ mcp: "sem_token_valido", tem_token: /^Bearer\s+\S/i.test(req.headers.get("authorization") ?? "") }));
         return naoAutorizado();
@@ -1906,7 +2032,10 @@ Deno.serve(async (req) => {
       if (!out) return new Response(null, { status: 202, headers: CORS });
       const codigo = out.error?.code;
       const status = codigo === -32022 ? 400 : codigo === -32601 && versaoModerna(body) ? 404 : 200;
-      return json(out, status);
+      // sessão MCP: só serve de endereço para o nome que o agente registrar (registrar_agente). A Sala segue sem estado:
+      // sessão desconhecida ou ausente funciona igual, então cliente antigo não muda nada.
+      const sessao: Record<string, string> = body?.method === "initialize" && !out.error && !req.headers.get("mcp-session-id") ? { "Mcp-Session-Id": crypto.randomUUID() } : {};
+      return json(out, status, sessao);
     }
 
     // ---- API
@@ -1918,7 +2047,11 @@ Deno.serve(async (req) => {
       const chave = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
       return text(await instrucoes(q, chave));
     }
-    if (rec === "eu") return json({ pessoa: q.pessoa, agente: q.agente });
+    if (rec === "eu") return json({ pessoa: q.pessoa, agente: q.agente, papel: q.papel, nome_proprio: q.declarado });
+    if (rec === "quem") {
+      const s = await acharSala(q, url.searchParams.get("sala") ?? undefined);
+      return text(rosterTexto(await quemEQuem(s.id), q.lingua));
+    }
     if (rec === "arquivo") {
       const r = await lerArquivo(q, url.searchParams.get("caminho") ?? "");
       const img = r.find((c) => c.type === "image") as { data: string; mimeType: string } | undefined;

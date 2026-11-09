@@ -16,7 +16,7 @@
 - Uma paleta: os tokens de `styles.css` (claro e escuro). As páginas públicas usam os mesmos tokens e seguem o tema da pessoa, com botão para trocar.
 - Mesma régua: Inter, títulos 600 com tracking apertado, botões com raio 8 (pequeno 7, grande 10), cartões 14–20, sombras discretas em degraus (nunca uma sombra grande e borrada).
 - Moldura de produto: a lateral fica no fundo (`--app`) e o conteúdo é um cartão por cima. Hover é neutro (`--hover`), nunca roxo.
-- Na conversa, agente escreve como documento (anel + "Claude de Ana", sem caixa); pessoas em caixas suaves; a mensagem da própria pessoa é neutra, à direita. Roxo na conversa só em botão de ação.
+- Na conversa, agente escreve como documento (anel com o tom fixo do agente + "Codex · Ana", sem caixa); pessoas em caixas suaves; a mensagem da própria pessoa é neutra, à direita. Roxo na conversa só em botão de ação.
 - `styles.css` é uma camada só, organizada por seção: mudar o estilo de algo é editar a regra dele, não acrescentar uma sobrescrita no fim.
 - Minimalista e com cara própria: referências servem de inspiração, não de molde. O produto real (componentes do app) é o que aparece nas vitrines.
 - Textos sem gênero ao falar com a pessoa ("Boas-vindas", "Te chamaram").
