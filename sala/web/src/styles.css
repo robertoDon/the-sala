@@ -855,6 +855,8 @@ input::placeholder, textarea::placeholder { color: var(--cinza-claro); }
 .sugestoes button.ativa { background: color-mix(in srgb, var(--acento) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 32%, transparent); }
 .sugestoes button.ativa .sug-rotulo { color: var(--tinta); }
 .sug-handle { font-weight: 600; }
+/* agente no menu do @: o mesmo tom do anel dele nas mensagens (@agents fica neutro) */
+.sug-anel { display: inline-grid; place-items: center; flex: none; color: var(--tom-agente, currentColor); }
 .sug-rotulo { color: var(--cinza); font-size: var(--t1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .faixa-avisos {

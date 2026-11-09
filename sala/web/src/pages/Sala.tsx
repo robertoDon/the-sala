@@ -23,7 +23,7 @@ import {
   IconeAbrir, IconeAjustes, IconeAgente, IconeBusca, IconeCheck, IconeClipe, IconeCopiar, IconeTarefa, IconeColunas, IconeConvite, IconeDecisao, IconePlugue, IconeProposta, IconeVoltar, Marcador, IconeBiblioteca, IconePainel, IconeMais3,
 } from "../components/Icones";
 import {
-  abrirConectar, atrasada, copiarTexto, pedidoPara, presenca, sb, subirArquivo, ultimaSala,
+  abrirConectar, atrasada, copiarTexto, pedidoPara, presenca, sb, subirArquivo, tomDoAgente, ultimaSala,
   type Agente, type Anexo, type Membro, type Mensagem, type Reacao, type Tarefa,
 } from "../supabase";
 import { recado } from "../components/Recados";
@@ -142,7 +142,7 @@ export default function SalaPage() {
     { handle: tc("agentes", "agents"), rotulo: t("Todos os agentes da sala respondem", "All agents in the room reply"), agente: true },
     ...agentes.map((a) => {
       const repete = agentes.some((b) => b.uid !== a.uid && handle(b.nome) === handle(a.nome));
-      return { handle: `${a.nome.replace(/\s/g, "")}${repete ? `-${primeiro(a.uid)}` : ""}`, rotulo: `${deQuem(a.nome, nome(a.uid))}${a.papel ? ` · ${a.papel}` : ""}`, agente: true };
+      return { handle: `${a.nome.replace(/\s/g, "")}${repete ? `-${primeiro(a.uid)}` : ""}`, rotulo: `${deQuem(a.nome, nome(a.uid))}${a.papel ? ` · ${a.papel}` : ""}`, agente: true, tom: tomDoAgente(a.nome) };
     }),
     ...membros.filter((m) => m.user_id !== eu).map((m) => ({ handle: (m.perfis?.nome ?? "").split(" ")[0], rotulo: m.perfis?.nome ?? "" })),
     { handle: tc("todos", "everyone"), rotulo: t("Todo mundo, pessoas e agentes", "Everyone: people and agents"), apelidos: idioma() === "en" ? ["all"] : undefined },
