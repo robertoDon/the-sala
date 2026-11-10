@@ -50,7 +50,7 @@ export function Dicas() {
   const x = Math.min(Math.max(d.x, 120), window.innerWidth - 120);
   return (
     <div className={`dica ${d.embaixo ? "dica-embaixo" : ""}`} role="tooltip" style={{ left: x, top: d.y }}>
-      {d.texto}{d.tecla && <kbd>{d.tecla}</kbd>}
+      <span>{d.texto}</span>{d.tecla && <kbd>{d.tecla}</kbd>}
     </div>
   );
 }
