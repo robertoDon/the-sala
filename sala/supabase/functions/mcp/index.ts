@@ -29,7 +29,7 @@
 // Deploy com verify_jwt = false (a função valida o token ela mesma).
 
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
-import { chama, handle, montarRoster, nomeDeAgente, nomeDoApp, papelDeAgente, resolverAgente, rosterTexto, type AgenteRoster, type PessoaRoster } from "../_shared/agentes.ts";
+import { chama, handle, mencoes, montarRoster, nomeDeAgente, nomeDoApp, papelDeAgente, resolverAgente, rosterTexto, type AgenteRoster, type PessoaRoster } from "../_shared/agentes.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const BASE = `${SUPABASE_URL}/functions/v1/mcp`;
@@ -321,7 +321,26 @@ async function reagir(q: Quem, mensagem: number, emoji: string) {
   return true;
 }
 
-type Envio = { texto: string; proposta?: boolean; substitui?: unknown; responde_a?: number | null; anexos?: Anexo[]; novo_contexto?: string; aprovadores?: string[]; plano?: ItemPlano[] };
+type Envio = { texto: string; proposta?: boolean; substitui?: unknown; responde_a?: number | null; anexos?: Anexo[]; novo_contexto?: string; aprovadores?: string[]; plano?: ItemPlano[]; exigirChamada?: boolean };
+
+// Quem quer resposta marca quem responde. Mensagem sem nenhum @ não acorda ninguém: respondendo a outro agente
+// (ele pediu algo e espera o retorno) ou fazendo pergunta, a mensagem volta com o @ a usar.
+async function exigirChamada(q: Quem, sala: string, texto: string, responde: number | null) {
+  if (mencoes(texto).length) return;
+  let alvo: { user_id: string; agente: string | null } | null = null;
+  if (responde) {
+    const { data } = await db.from("mensagens").select("user_id, agente, sala_id").eq("id", responde).maybeSingle();
+    if (data && data.sala_id === sala && data.agente && !(data.user_id === q.userId && data.agente === q.agente)) alvo = data;
+  }
+  const pergunta = /\?(\s|$)/.test(texto.replace(/`[^`]*`/g, ""));
+  if (!alvo && !pergunta) return;
+  const arroba = alvo ? `@${alvo.agente!.replace(/\s/g, "")}` : "";
+  throw new Falha(alvo
+    ? tr(q, `Não enviada: você responde a ${alvo.agente} sem marcar ninguém, e ${alvo.agente} não seria avisado. Reenvie com ${arroba} (ou o @ de quem deve responder). Só reconhecer? Use reagir.`,
+      `Not sent: you're replying to ${alvo.agente} without an @, so ${alvo.agente} wouldn't be notified. Resend with ${arroba} (or the @ of whoever must answer). Just acknowledging? Use reagir.`)
+    : tr(q, `Não enviada: a mensagem pergunta algo sem marcar ninguém, e ninguém seria avisado. Reenvie com o @ de quem deve responder (o agente, ou @Pessoa para a pessoa).`,
+      `Not sent: the message asks something without an @, so nobody would be notified. Resend with the @ of whoever must answer (the agent, or @Person for the person).`));
+}
 
 async function enviar(q: Quem, sala: string, e: Envio): Promise<Msg> {
   const texto = (e.texto ?? "").trim();
@@ -354,6 +373,7 @@ async function enviar(q: Quem, sala: string, e: Envio): Promise<Msg> {
       if (!m.apagada && m.tipo !== "decisao" && meChamou(q, m)) { responde = m.id; break; }
     }
   }
+  if (e.exigirChamada && !e.proposta) await exigirChamada(q, sala, texto, responde);
   const { data, error } = await db.from("mensagens")
     .insert({ sala_id: sala, user_id: q.userId, agente: q.agente, texto, tipo: e.proposta ? "proposta" : "mensagem", responde_a: responde, anexos: e.anexos ?? [], novo_contexto: novo,
       aprovadores: e.proposta && e.aprovadores?.length ? e.aprovadores : null, plano: e.proposta && e.plano?.length ? e.plano : null })
@@ -1031,6 +1051,7 @@ WHEN TO TALK
 - Pass responde_a with the id of the message you reply to. In a discussion that started with a question to @agents, every message of yours (and your final proposal) replies to that original question, so the room can compare.
 - Never write message or task numbers in your text (#N, "task 12"): people don't see them. Use names ("David's question", "the category list task"). Numbers go only in tool parameters.
 - After a few agent messages in a row (the room sets how many), the room waits for a person to write.
+- Want an answer or an action? @ whoever must give it, every time: replying to an agent that asked you something (@Codex), handing back a result, or asking a question. A message with no @ notifies nobody, and the room refuses an agent reply or question without one. A question for a person: @Person on the first line, plus their lead agent if it should follow up. Just acknowledging? React.
 
 ROLES AND HANDOFFS
 - Every room has a lead: the agent the instructions or the memory ("Roles in practice") name as lead. Without one, the lead is the agent of the person who made the request. The lead talks to the people: sums up, asks, proposes. The others do their part and hand it back to the lead.
@@ -1081,6 +1102,7 @@ QUANDO FALAR
 - Passe responde_a com o id da mensagem que você responde. Numa discussão que começou com pergunta para @agentes, toda mensagem sua (e a proposta final) responde à pergunta original, para a sala comparar.
 - Nunca escreva números de mensagem ou de tarefa no texto (#N, "tarefa 12"): as pessoas não veem. Cite pelo nome ("a pergunta do David", "a tarefa da lista de categorias"). Número só nos parâmetros.
 - Depois de algumas mensagens seguidas de agentes (cada sala define quantas), a sala espera uma pessoa escrever.
+- Quer resposta ou ação? Marque com @ quem deve dar, sempre: respondendo a um agente que te pediu algo (@Codex), devolvendo um resultado ou fazendo uma pergunta. Mensagem sem @ não avisa ninguém, e a sala recusa resposta a agente ou pergunta de agente sem @. Pergunta para uma pessoa: @Pessoa na primeira linha, e também o agente que conduz se ele deve acompanhar. Só reconhecer? Reaja.
 
 PAPÉIS E PASSAGEM
 - Toda sala tem um condutor: o agente que as instruções ou a memória ("Papéis na prática") apontam como líder. Sem isso, conduz o agente da pessoa que fez o pedido. O condutor fala com as pessoas: resume, pergunta, propõe. Os outros fazem a sua parte e devolvem ao condutor.
@@ -1633,7 +1655,7 @@ async function chamar(q: Quem, nome: string, a: any): Promise<string | Conteudo[
       const anexos = Array.isArray(a.enviados) && a.enviados.length
         ? await anexosEnviados(q, s.id, (a.enviados as unknown[]).map(String))
         : [await subirTexto(q, s.id, String(a.nome ?? ""), String(a.conteudo ?? ""), a.base64)];
-      const m = await enviar(q, s.id, { texto: String(a.texto ?? ""), responde_a: a.responde_a, anexos });
+      const m = await enviar(q, s.id, { texto: String(a.texto ?? ""), responde_a: a.responde_a, anexos, exigirChamada: true });
       const nomes = anexos.map((x) => `"${x.nome}"`).join(", ");
       return tr(q, `${anexos.length > 1 ? `${anexos.length} arquivos` : "Arquivo"} ${nomes} enviado${anexos.length > 1 ? "s" : ""} na sala "${s.nome}" (#${m.id}).`,
         `${anexos.length > 1 ? `${anexos.length} files` : "File"} ${nomes} sent to the room "${s.nome}" (#${m.id}).`);
@@ -1697,7 +1719,7 @@ async function chamar(q: Quem, nome: string, a: any): Promise<string | Conteudo[
       const s = await acharSala(q, a.sala);
       const proposta = nome === "fazer_proposta";
       const aprovadores = proposta ? await acharAprovadores(q, s.id, a.aprovadores) : undefined;
-      const m = await enviar(q, s.id, { texto: String(a.texto ?? ""), proposta, responde_a: a.responde_a, aprovadores, substitui: proposta ? a.substitui : undefined });
+      const m = await enviar(q, s.id, { texto: String(a.texto ?? ""), proposta, responde_a: a.responde_a, aprovadores, substitui: proposta ? a.substitui : undefined, exigirChamada: true });
       const aviso = await chamadasNaoLidas(q, s.id);
       return (proposta
         ? tr(q, `Proposta #${m.id} enviada na sala "${s.nome}". As pessoas aprovam ou recusam; a decisão chega como mensagem nova.`,
@@ -1911,7 +1933,7 @@ async function desinscrever(q: Quem, p: any) {
 // manda versão, cliente e capacidades em cada pedido (_meta) e começa por server/discover. Na nova, todo resultado
 // leva resultType, e as listas levam dicas de cache.
 const VERSOES = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVIDOR = { name: "sala", title: "The Sala", version: "4.33.0" };
+const SERVIDOR = { name: "sala", title: "The Sala", version: "4.34.0" };
 const versaoModerna = (msg: any): string | undefined => msg?.params?._meta?.["io.modelcontextprotocol/protocolVersion"];
 
 async function mcp(q: Quem, msg: any) {
@@ -2088,7 +2110,7 @@ Deno.serve(async (req) => {
       if (acao === "mensagens" && req.method === "POST") {
         const b = await req.json().catch(() => ({}));
         const proposta = !!b.proposta || b.contexto !== undefined;
-        const m = await enviar(q, s.id, { texto: b.texto, proposta, responde_a: b.responde_a,
+        const m = await enviar(q, s.id, { texto: b.texto, proposta, responde_a: b.responde_a, exigirChamada: true,
           novo_contexto: b.contexto === undefined ? undefined : String(b.contexto),
           aprovadores: proposta && b.contexto === undefined ? await acharAprovadores(q, s.id, b.aprovadores) : undefined });
         return json({ id: m.id, responde_a: m.responde_a }, 201);
@@ -2096,7 +2118,7 @@ Deno.serve(async (req) => {
       if (acao === "arquivos" && req.method === "POST") {
         const b = await req.json().catch(() => ({}));
         const anexo = await subirTexto(q, s.id, String(b.nome ?? ""), String(b.conteudo ?? ""), b.base64);
-        const m = await enviar(q, s.id, { texto: String(b.texto ?? ""), responde_a: b.responde_a, anexos: [anexo] });
+        const m = await enviar(q, s.id, { texto: String(b.texto ?? ""), responde_a: b.responde_a, anexos: [anexo], exigirChamada: true });
         return json({ id: m.id, arquivo: anexo.path }, 201);
       }
       if (acao === "painel") return text(await painel(q, s));
