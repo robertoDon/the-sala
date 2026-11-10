@@ -206,6 +206,16 @@ a.btn { text-decoration: none; }
 .confirmar-armado { white-space: nowrap; }
 .btn-acao.confirmar-armado, .msg-acoes .confirmar-armado { width: auto; min-height: 30px; height: 30px; padding: 0 10px; }
 
+/* puxar para atualizar (app instalado no celular): anel que desce com o dedo e gira ao soltar */
+.puxar {
+  position: fixed; z-index: 75; top: env(safe-area-inset-top); left: 50%; display: grid; place-items: center; width: 36px; height: 36px;
+  border-radius: 50%; background: var(--elevado); border: 1px solid var(--linha); box-shadow: var(--sombra-media); color: var(--cinza); pointer-events: none;
+}
+.puxar-anel { transition: color var(--rapido); }
+.puxar-anel.pronto { color: var(--tinta); }
+.puxar-anel.girando { animation: puxar-gira .8s linear infinite; }
+@keyframes puxar-gira { to { transform: rotate(360deg); } }
+
 /* recados: erro ou aviso curto no alto da tela, no lugar do alert() */
 .recados { position: fixed; z-index: 70; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(440px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .recado {

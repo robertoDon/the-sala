@@ -1,5 +1,6 @@
 import { Dicas } from "./components/Dicas";
 import { Recados } from "./components/Recados";
+import { Puxar } from "./components/Puxar";
 import { createContext, Fragment, useContext, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
@@ -59,6 +60,7 @@ export default function App() {
       </Routes>
       <Dicas />
       <Recados />
+      <Puxar />
       </Fragment>
     </AuthCtx.Provider>
   );
