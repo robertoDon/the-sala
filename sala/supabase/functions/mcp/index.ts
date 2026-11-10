@@ -568,8 +568,8 @@ async function cabecalho(s: Sala, q?: Quem) {
     biblioteca(s.id).catch(() => [] as ItemBib[]), anexosRecentes(s.id).catch(() => [] as Msg[]), quemEQuem(s.id).catch(() => [])]);
   const roster = rosterTexto(quem, q?.lingua ?? "pt");
   const voce = q ? `\n${tr(q, `Você aqui: ${q.agente}, agente de ${q.pessoa}`, `You here: ${q.agente}, ${q.pessoa}'s agent`)}${q.papel ? ` (${q.papel})` : ""}.${q.declarado ? ""
-    : tr(q, ` Esta conexão não tem nome próprio (sai como "${q.agente}", o nome do app). Se a sua pessoa usa mais de um agente neste app, diga quem você é com registrar_agente.`,
-      ` This connection has no name of its own (it shows as "${q.agente}", the app name). If your person uses more than one agent in this app, say who you are with registrar_agente.`)}` : "";
+    : tr(q, ` Esta conexão não tem nome próprio (sai como "${q.agente}", o nome do app). Se a sua pessoa usa mais de um agente neste app, passe agente="<seu nome>" em toda chamada da Sala (o Claude e o ChatGPT não guardam sessão, então registrar_agente não segura o nome entre chamadas).`,
+      ` This connection has no name of its own (it shows as "${q.agente}", the app name). If your person uses more than one agent in this app, pass agente="<your name>" on every Sala call (Claude and ChatGPT don't keep a session, so registrar_agente can't hold the name between calls).`)}` : "";
   const r = registro(ps, q);
   const t = q ? listaTarefas(ts, q, 3) : "";
   const b = listaBiblioteca(bs, q, true);
@@ -1035,7 +1035,7 @@ WHEN TO TALK
 ROLES AND HANDOFFS
 - Every room has a lead: the agent the instructions or the memory ("Roles in practice") name as lead. Without one, the lead is the agent of the person who made the request. The lead talks to the people: sums up, asks, proposes. The others do their part and hand it back to the lead.
 - Handing work to another agent: one line per ask, "@Agent: what · what to deliver" (the @ shown in "Who's who"; @Agent-Person when two people have agents with the same name). Replying to an agent: just the result or the problem, no audience.
-- The room already shows who wrote each message (agent · person). Don't introduce yourself or tag your text ("Codex here", "[Claude·live]"). If your person uses more than one agent in the same app, say who you are once at the start with registrar_agente.
+- The room already shows who wrote each message (agent · person). Don't introduce yourself or tag your text ("Codex here", "[Claude·live]"). If your person uses more than one agent in the same app, pass agente="<your name>" on every Sala call (registrar_agente only holds the name on apps that keep an MCP session).
 - When an exchange between agents ends, the lead closes it for the people in up to 3 lines: what's done, what's left and whose it is.
 - Need a person (a decision, access, a file)? Put it on the first line with @Name and the exact question ("@Cathleen: can you refresh the dev SSO? That's the only thing missing."). Don't bury it.
 - When you deliver, end with the next step and whose it is, in one line. A person just says "hi"? Answer briefly with what's waiting for them.
@@ -1085,7 +1085,7 @@ QUANDO FALAR
 PAPÉIS E PASSAGEM
 - Toda sala tem um condutor: o agente que as instruções ou a memória ("Papéis na prática") apontam como líder. Sem isso, conduz o agente da pessoa que fez o pedido. O condutor fala com as pessoas: resume, pergunta, propõe. Os outros fazem a sua parte e devolvem ao condutor.
 - Passar trabalho para outro agente: uma linha por pedido, "@Agente: o quê · o que entregar" (o @ que aparece no "Quem é quem"; @Agente-Pessoa quando duas pessoas têm agentes com o mesmo nome). Respondendo a um agente: só o resultado ou o problema, sem plateia.
-- A sala já mostra quem escreveu cada mensagem (agente · pessoa). Não se apresente nem ponha etiqueta no texto ("Codex aqui", "[Claude·live]"). Se a sua pessoa usa mais de um agente no mesmo app, diga quem você é uma vez, no começo, com registrar_agente.
+- A sala já mostra quem escreveu cada mensagem (agente · pessoa). Não se apresente nem ponha etiqueta no texto ("Codex aqui", "[Claude·live]"). Se a sua pessoa usa mais de um agente no mesmo app, passe agente="<seu nome>" em toda chamada da Sala (registrar_agente só segura o nome em apps que mantêm sessão MCP).
 - Quando uma troca entre agentes termina, quem conduz fecha para as pessoas em até 3 linhas: o que ficou pronto, o que falta e de quem.
 - Precisa de uma pessoa (decisão, acesso, arquivo)? Ponha na primeira linha, com @Nome e a pergunta exata ("@Cathleen: renova o SSO do dev? É só isso que falta."). Não enterre no meio.
 - Ao entregar, termine com o próximo passo e de quem é, numa linha. A pessoa só disse "oi"? Responda curto com o que está esperando por ela.

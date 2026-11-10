@@ -315,22 +315,22 @@ async function despertar(id: number, so: { user_id: string; agente: string } | n
       ? `The Sala · room "${sala}" (id ${m.sala_id}) · message #${m.id} from ${quem}` +
         (m.tipo === "decisao" ? ` · decision on proposal #${m.responde_a}: ${m.estado === "aprovada" ? "APPROVED" : m.estado === "ajuste" ? "ADJUSTMENT REQUESTED" : "DECLINED"}` : "") +
         `\nExcerpt: ${limpo(emIngles(m.texto), 400)}` +
-        `\nYou answer as ${d.agente}: if this connection doesn't have that name yet, call registrar_agente with nome "${d.agente}" first.`
+        `\nYou answer as ${d.agente}: pass agente="${d.agente}" on every Sala call.`
       : `The Sala · sala "${sala}" (id ${m.sala_id}) · mensagem #${m.id} de ${quem}` +
         (m.tipo === "decisao" ? ` · decisão sobre a proposta #${m.responde_a}: ${m.estado === "aprovada" ? "APROVADA" : m.estado === "ajuste" ? "PEDIDO DE AJUSTE" : "RECUSADA"}` : "") +
         `\nTrecho: ${limpo(m.texto, 400)}` +
-        `\nVocê responde como ${d.agente}: se esta conexão ainda não tem esse nome, chame registrar_agente com nome "${d.agente}" antes.`;
+        `\nVocê responde como ${d.agente}: passe agente="${d.agente}" em toda chamada da Sala.`;
     let status = 0, erro: string | null = null;
     if (d.evento) {
       const motivo = m.tipo === "decisao" ? "decisao" : "chamado";
       const dados = {
         sala_id: m.sala_id, sala, mensagem: m.id, autor: quem, motivo, trecho: limpo(en ? emIngles(m.texto) : m.texto, 400),
         instrucao: en
-          ? `You answer as ${d.agente} (if this connection doesn't have that name yet, call registrar_agente with nome "${d.agente}" first). Use ler_mensagens on room ${m.sala_id} and reply to message #${m.id} with enviar_mensagem (responde_a=${m.id}).` +
+          ? `You answer as ${d.agente} (pass agente="${d.agente}" on every Sala call). Use ler_mensagens on room ${m.sala_id} and reply to message #${m.id} with enviar_mensagem (responde_a=${m.id}).` +
             (motivo === "decisao" ? (m.estado === "ajuste"
               ? ` It's an adjustment request on your proposal: fix what the note asks, check with the other agents if it touches their part, and resend once with substitui=${m.responde_a}.`
               : " It's a decision on your proposal: follow it and tell the room what you did.") : "")
-          : `Você responde como ${d.agente} (se esta conexão ainda não tem esse nome, chame registrar_agente com nome "${d.agente}" antes). Use ler_mensagens na sala ${m.sala_id} e responda à mensagem #${m.id} com enviar_mensagem (responde_a=${m.id}).` +
+          : `Você responde como ${d.agente} (passe agente="${d.agente}" em toda chamada da Sala). Use ler_mensagens na sala ${m.sala_id} e responda à mensagem #${m.id} com enviar_mensagem (responde_a=${m.id}).` +
             (motivo === "decisao" ? (m.estado === "ajuste"
               ? ` É um pedido de ajuste na sua proposta: corrija o que a nota pede, confirme com os outros agentes se mexer na parte deles e reenvie uma vez com substitui=${m.responde_a}.`
               : " É uma decisão sobre a sua proposta: siga-a e conte na sala o que fez.") : ""),
