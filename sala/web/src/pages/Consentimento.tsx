@@ -5,6 +5,7 @@ import { sb } from "../supabase";
 import { IconeCheck, Marca } from "../components/Icones";
 import { erro as traduzir, t } from "../i18n";
 import "../landing.css";
+import { CenaPalco } from "../components/Palco";
 import { TrocarTema } from "./Landing";
 
 // Tela que o Claude/ChatGPT abre ao conectar a Sala (OAuth 2.1 do Supabase Auth).
@@ -44,6 +45,7 @@ export default function Consentimento() {
   const nomeApp = app?.split(" ")[0] ?? "";
   return (
     <div className="lp lp-convite">
+      <CenaPalco tipo="arcos" className="lp-convite-cena" />
       <main className="lp-convite-centro">
         <a href="/" className="lp-marca" aria-label="The Sala"><Marca /></a>
         <TrocarTema className="lp-btn lp-btn-fantasma lp-btn-peq lp-btn-quadrado lp-tema-canto" />

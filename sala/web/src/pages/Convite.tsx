@@ -7,6 +7,7 @@ import { corDaSala } from "../components/Layout";
 import { erro, t } from "../i18n";
 import "../landing.css";
 import { TrocarTema } from "./Landing";
+import { CenaPalco } from "../components/Palco";
 import { recado } from "../components/Recados";
 
 type Info = { sala_id: string; nome: string; pessoas: number; ja_membro: boolean; leitura: boolean };
@@ -35,6 +36,7 @@ export default function Convite() {
 
   return (
     <div className="lp lp-convite">
+      <CenaPalco tipo="arcos" className="lp-convite-cena" />
       <main className="lp-convite-centro">
         <a href="/" className="lp-marca" aria-label="The Sala"><Marca /></a>
         <TrocarTema className="lp-btn lp-btn-fantasma lp-btn-peq lp-btn-quadrado lp-tema-canto" />

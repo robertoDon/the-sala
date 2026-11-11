@@ -320,12 +320,13 @@
 .lp-entrar .auth-ou::before, .lp-entrar .auth-ou::after { background: var(--lp-borda); }
 .lp-entrar-rodape { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; font-size: 13px; color: var(--cinza); }
 .lp-entrar-rodape a:hover { color: var(--tinta); }
+/* o produto rodando flutua sobre o palco (um arco com luz), como as vitrines da landing */
 .lp-entrar-vitrine {
-  position: relative; margin: 16px 16px 16px 0; border-radius: 24px; overflow: hidden; border: 1px solid var(--lp-borda);
+  position: relative; margin: 16px 16px 16px 0; border-radius: 24px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; padding: 48px;
-  background: var(--app);
 }
-.lp-entrar-vitrine > * { position: relative; }
+.lp-entrar-vitrine > :not(.lp-palco-cena) { position: relative; }
+.lp-entrar-vitrine .aovivo { border: 0; box-shadow: 0 0 0 1px rgb(var(--lp-v) / .06), 0 1px 1px -.5px rgb(17 17 26 / .08), 0 3px 3px -1.5px rgb(17 17 26 / .08), 0 6px 6px -3px rgb(17 17 26 / .08), 0 12px 12px -6px rgb(17 17 26 / .08), 0 24px 24px -12px rgb(17 17 26 / .08); }
 .lp-entrar-vitrine .aovivo { width: 100%; max-width: 480px; }
 @media (max-width: 960px) {
   .lp-entrar { grid-template-columns: 1fr; }
@@ -337,10 +338,14 @@
 
 /* convite: um cartão só, no centro do palco */
 .lp-convite { display: grid; min-height: 100%; }
-.lp-convite::before { content: ""; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(50% 45% at 50% 30%, rgb(var(--lp-v) / .05), transparent 70%); }
+/* a página inteira é o palco: uma colunata de arcos, e o cartão flutua no meio */
+.lp-convite { isolation: isolate; background: var(--palco-parede); }
+.lp-convite-cena { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
+.lp-convite .lp-marca { padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--fundo) 78%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .lp-convite-centro { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; padding: 48px 16px; }
 .lp-convite-cartao { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 40px 32px 32px;
-  border-radius: 20px; border: 1px solid var(--lp-borda-forte); background: linear-gradient(180deg, rgb(var(--lp-v) / .05), rgb(var(--lp-v) / .015)); box-shadow: 0 40px 100px -30px var(--lp-sombra-funda); }
+  border-radius: 20px; background: var(--fundo);
+  box-shadow: 0 0 0 1px rgb(var(--lp-v) / .06), 0 1px 1px -.5px rgb(17 17 26 / .08), 0 3px 3px -1.5px rgb(17 17 26 / .08), 0 6px 6px -3px rgb(17 17 26 / .08), 0 12px 12px -6px rgb(17 17 26 / .08), 0 24px 24px -12px rgb(17 17 26 / .08); }
 .lp-convite-cartao .lp-sub { font-size: 16px; margin-bottom: 10px; }
 .lp-convite-cartao .lp-btn { width: 100%; }
 .lp-convite-cartao .lp-btn:disabled { opacity: .7; cursor: default; }
