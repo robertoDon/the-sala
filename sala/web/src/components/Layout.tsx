@@ -5,6 +5,7 @@ import { sb, type ItemFila, type Mensagem, type Sala } from "../supabase";
 import { prefs, tocarPlim } from "../preferencias";
 import { chamaTodos, handle } from "./Texto";
 import { gravado, idioma, locale, t } from "../i18n";
+import { publicarFila } from "../fila";
 import { IconeAgente, IconeBusca, IconeCasa, IconeMais, Marcador, IconePlugue, IconeProposta, IconeSino, IconeVoltar, Marca } from "./Icones";
 import { Conectar } from "./Conectar";
 import { Conta } from "./Conta";
@@ -46,6 +47,9 @@ export function useSalas() {
       .subscribe();
     return () => { sb.removeChannel(canal); window.clearTimeout(espera.current); };
   }, []);
+
+  // a mesma fila no ícone do app e no widget (só depois da primeira leitura: lista vazia de início não zera o número)
+  useEffect(() => { if (salas !== null) publicarFila(fila); }, [fila, salas]);
 
   useEffect(() => {
     const total = (salas ?? []).reduce((n, s) => n + Number(s.nao_lidas), 0);

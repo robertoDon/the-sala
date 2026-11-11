@@ -10,6 +10,8 @@
 //              resposta a algo dela, decisão sobre proposta dela
 //   nada     → nunca
 // Também avisa quem ficou responsável por uma tarefa nova ({tarefa: id}).
+// Todo push leva junto o "esperando você" da pessoa (fila_de): o número vai para o ícone do app e os três
+// primeiros itens para o widget. Cada tipo de aviso tem o seu botão de ação (decidir, pedir a resposta, ver tarefas).
 //
 // Deploy com verify_jwt = false (confere o segredo x-aviso).
 
@@ -115,6 +117,32 @@ const limpo = (t: string, n = 140) => {
   return l.length > n ? `${l.slice(0, n - 1)}…` : l;
 };
 
+// ---------------------------------------------------------------- esperando você (ícone, widget)
+
+type Fila = { lingua: Lingua; espera: number; manchete: string; itens: { titulo: string; detalhe: string; alerta: boolean; url: string }[] };
+async function filaDe(uid: string, l: Lingua): Promise<Fila> {
+  const { data } = await db.rpc("fila_de", { quem: uid });
+  const linhas = (data ?? []) as { sala_id: string; sala: string; tipo: string; ref: number; titulo: string; prazo: string | null }[];
+  const en = l === "en";
+  const dia = (iso: string) => new Date(iso).toLocaleDateString(en ? "en-US" : "pt-BR", { day: "numeric", month: "short", timeZone: "America/Sao_Paulo" }).replace(".", "");
+  const hoje = (iso: string) => dia(iso) === dia(new Date().toISOString());
+  const n = linhas.length;
+  return {
+    lingua: l,
+    espera: n,
+    manchete: !n ? (en ? "All caught up." : "Tudo em dia.") : n === 1 ? (en ? "1 thing is waiting for you." : "1 coisa espera por você.") : (en ? `${n} things are waiting for you.` : `${n} coisas esperam por você.`),
+    itens: linhas.slice(0, 3).map((f) => {
+      const atrasada = !!f.prazo && new Date(f.prazo).getTime() < Date.now();
+      const quando = f.tipo === "proposta" ? (en ? "to decide" : "para decidir")
+        : !f.prazo ? (en ? "your task" : "tarefa sua")
+        : atrasada ? (en ? "overdue" : "atrasada")
+        : hoje(f.prazo) ? (en ? "due today" : "vence hoje") : (en ? `due ${dia(f.prazo)}` : `vence ${dia(f.prazo)}`);
+      return { titulo: limpo(f.titulo || (en ? "Proposal" : "Proposta"), 80), detalhe: `${f.sala} · ${quando}`, alerta: atrasada,
+        url: f.tipo === "proposta" ? `/s/${f.sala_id}?ir=${f.ref}` : `/s/${f.sala_id}?tarefas=1` };
+    }),
+  };
+}
+
 let segredoAviso: string | null = null;
 const TODOS = String.fromCharCode(0) + "todos"; // "todos os seus agentes" (marca interna)
 
@@ -202,10 +230,19 @@ Deno.serve(async (req) => {
       const seu = l === "en" ? (ag === TODOS ? "your agents" : `your ${ag}`) : (ag === TODOS ? "seus agentes" : `seu ${ag}`);
       return { titulo: l === "en" ? `${quem(l)} called ${seu} · ${sala}` : `${quem(l)} chamou ${seu} · ${sala}`,
         corpo: `${l === "en" ? "Tap to ask for the answer." : "Toque para pedir a resposta."} ${limpo(texto, 110)}`,
-        url: `/s/${m.sala_id}?pedir=${m.id}`, sala: m.sala_id, tag: `sala-${m.sala_id}` };
+        url: `/s/${m.sala_id}?pedir=${m.id}`, sala: m.sala_id, tag: `sala-${m.sala_id}`, fila: filas.get(uid),
+        acoes: [{ acao: "pedir", titulo: l === "en" ? "Ask for the answer" : "Pedir a resposta", url: `/s/${m.sala_id}?pedir=${m.id}` }] };
     }
-    return { titulo: titulo(l), corpo: limpo(texto), url: `/s/${m.sala_id}`, sala: m.sala_id, tag: `sala-${m.sala_id}` };
+    if (m.tipo === "proposta") {
+      const url = `/s/${m.sala_id}?ir=${m.id}`;
+      return { titulo: titulo(l), corpo: limpo(texto), url, sala: m.sala_id, tag: `sala-${m.sala_id}`, fila: filas.get(uid),
+        acoes: [{ acao: "decidir", titulo: l === "en" ? "View and decide" : "Ver e decidir", url }] };
+    }
+    return { titulo: titulo(l), corpo: limpo(texto), url: `/s/${m.sala_id}`, sala: m.sala_id, tag: `sala-${m.sala_id}`, fila: filas.get(uid) };
   };
+  // o "esperando você" de cada pessoa avisada, já no idioma dela
+  const filas = new Map<string, Fila>(await Promise.all([...new Set(inscricoes.map((i) => i.user_id))]
+    .map(async (u) => [u, await filaDe(u, lingua.get(u) ?? "pt")] as const)));
 
   const mortos: string[] = [];
   await Promise.all(inscricoes.map(async (i) => {
@@ -251,7 +288,8 @@ async function avisarTarefa(id: number) {
   const n = await mandarPara(t.responsavel, {
     titulo: en ? `New task for ${para} · ${salaNome}` : `Tarefa nova para ${para} · ${salaNome}`,
     corpo: en ? `${t.titulo}${prazo} · from ${de}` : `${t.titulo}${prazo} · de ${de}`,
-    url: `/s/${t.sala_id}?tarefas=1`, sala: t.sala_id, tag: `tarefa-${t.id}`,
+    url: `/s/${t.sala_id}?tarefas=1`, sala: t.sala_id, tag: `tarefa-${t.id}`, fila: await filaDe(t.responsavel, en ? "en" : "pt"),
+    acoes: [{ acao: "tarefas", titulo: en ? "View tasks" : "Ver tarefas", url: `/s/${t.sala_id}?tarefas=1` }],
   }, true);
   return new Response(`avisados ${n}`);
 }

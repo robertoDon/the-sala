@@ -48,4 +48,14 @@ cd desdivj-ref && for f in midia/*.mp4; do d=$(ffprobe -v error -show_entries fo
 
 - **Fotos de arquitetura e natureza atrás das telas.** Servem para apresentar o produto, não para usar no app. Se entrarem, é na landing, como moldura das vitrines.
 - **Cursor, lupa e som.** É linguagem de vídeo de demo. Podem entrar num vídeo da landing, não no produto.
-- **Mesmo conceito em Watch, Dynamic Island e widget.** Fica como próximo passo: o "esperando você" cabe numa notificação rica e num widget do app instalado.
+
+## Depois: o mesmo conceito em outros tamanhos
+
+Ref.: `2108886680359035068` (Watch → Dynamic Island → Widget → Desktop → Mobile). O "Esperando você" do Início agora também aparece:
+
+- **No ícone do app instalado:** o número de coisas esperando por você (`setAppBadge`). O app atualiza o número quando está aberto; quando está fechado, ele vem junto com cada aviso.
+- **Na notificação:** cada aviso traz o botão que resolve, no próprio aviso ("Ver e decidir", "Pedir a resposta", "Ver tarefas").
+- **No widget do Windows 11:** um cartão com a manchete ("3 coisas esperam por você.") e os três primeiros itens (`public/widget/modelo.json`, Adaptive Card). O atrasado aparece no tom de alerta. iPhone e Android não deixam app web ter widget; lá, o número no ícone e a notificação fazem esse papel.
+
+Por trás: `fila_de` (migração 034) dá ao servidor a mesma fila do Início, e `web/src/fila.ts` monta o mesmo retrato no app. Ao sair da conta, o número e o widget se apagam.
+

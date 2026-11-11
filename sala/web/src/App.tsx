@@ -14,6 +14,7 @@ import Privacidade from "./pages/Privacidade";
 import Landing from "./pages/Landing";
 import Ajuda from "./pages/Ajuda";
 import { definirIdioma, escolhido, idioma, useIdioma } from "./i18n";
+import { esquecerFila } from "./fila";
 import { lerDaConta } from "./preferencias";
 
 type Auth = { sessao: Session | null; perfil: Perfil | null; recarregarPerfil: () => void };
@@ -38,7 +39,7 @@ export default function App() {
 
   useEffect(() => {
     sb.auth.getSession().then(({ data }) => { setSessao(data.session); carregarPerfil(data.session?.user.id); lerDaConta(data.session?.user); });
-    const { data } = sb.auth.onAuthStateChange((_e, s) => { setSessao(s); carregarPerfil(s?.user.id); });
+    const { data } = sb.auth.onAuthStateChange((e, s) => { setSessao(s); carregarPerfil(s?.user.id); if (e === "SIGNED_OUT") esquecerFila(); });
     return () => data.subscription.unsubscribe();
   }, []);
 

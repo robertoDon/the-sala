@@ -1,0 +1,46 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "● ${rotulo}",
+      "size": "Small",
+      "weight": "Bolder",
+      "color": "Attention",
+      "spacing": "None"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${manchete}",
+      "size": "ExtraLarge",
+      "weight": "Bolder",
+      "wrap": true,
+      "maxLines": 2,
+      "spacing": "Small"
+    },
+    {
+      "type": "TextBlock",
+      "$when": "${vazio}",
+      "text": "${textoVazio}",
+      "isSubtle": true,
+      "wrap": true,
+      "size": "Small"
+    },
+    {
+      "type": "Container",
+      "$data": "${itens}",
+      "separator": true,
+      "spacing": "Medium",
+      "selectAction": { "type": "Action.Execute", "verb": "abrir", "data": { "url": "${url}" } },
+      "items": [
+        { "type": "TextBlock", "text": "${titulo}", "weight": "Bolder", "wrap": true, "maxLines": 2 },
+        { "type": "TextBlock", "text": "${detalhe}", "size": "Small", "isSubtle": true, "color": "${cor}", "spacing": "None", "wrap": true, "maxLines": 1 }
+      ]
+    }
+  ],
+  "actions": [
+    { "type": "Action.Execute", "title": "${abrir}", "verb": "abrir", "data": { "url": "/" } }
+  ]
+}

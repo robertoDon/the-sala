@@ -8,8 +8,47 @@
   "background_color": "#FCFCFD",
   "theme_color": "#FCFCFD",
   "icons": [
-    { "src": "/icone-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icone-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icone-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "The Sala · Waiting for you",
+      "short_name": "Waiting for you",
+      "description": "How many things are waiting for you and the first three: decisions and tasks across all your rooms.",
+      "tag": "esperando",
+      "ms_ac_template": "/widget/modelo.json",
+      "data": "/widget/fila.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "/widget/previa.png",
+          "sizes": "600x400",
+          "label": "Waiting for you"
+        }
+      ],
+      "icons": [
+        {
+          "src": "/icone-192.png",
+          "sizes": "192x192"
+        }
+      ],
+      "auth": false,
+      "update": 900
+    }
   ]
 }
