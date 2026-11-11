@@ -46,7 +46,7 @@ cd desdivj-ref && for f in midia/*.mp4; do d=$(ffprobe -v error -show_entries fo
 
 ## O que ficou de fora, de propósito
 
-- **Fotos de arquitetura e natureza atrás das telas.** Servem para apresentar o produto, não para usar no app. Se entrarem, é na landing, como moldura das vitrines.
+- **Fotos de arquitetura e natureza atrás das telas.** Testamos um cenário desenhado (arcos, luz entrando) atrás das vitrines da landing e das telas públicas, e não ficou: as vitrines continuam no fundo neutro.
 - **Cursor, lupa e som.** É linguagem de vídeo de demo. Podem entrar num vídeo da landing, não no produto.
 
 ## Depois: o mesmo conceito em outros tamanhos

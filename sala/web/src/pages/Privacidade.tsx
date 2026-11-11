@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
 import { t, useIdioma } from "../i18n";
-import { IconeAgente, IconeLixo, IconeSair, Marca } from "../components/Icones";
+import { IconeAgente, IconeLixo, IconeSair } from "../components/Icones";
+import { MolduraPublica } from "../components/MolduraPublica";
 
 // Três promessas curtas, cada uma com um pedaço da tela de verdade. Só o que o app já faz.
 function Promessas() {
@@ -32,13 +32,12 @@ function Promessas() {
     </section>
   );
 }
-import { TrocarIdioma } from "./Landing";
 
 export default function Privacidade() {
   const en = useIdioma() === "en";
   return (
-    <main className="documento">
-      <Link to="/" aria-label="The Sala"><Marca /></Link>
+    <MolduraPublica className="lp-privacidade">
+    <main className="documento privacidade">
       {en ? (
         <>
           <h1 className="display">Privacy Policy</h1>
@@ -97,7 +96,7 @@ export default function Privacidade() {
         </>
       )}
 
-      <p className="nota"><TrocarIdioma /></p>
     </main>
+    </MolduraPublica>
   );
 }

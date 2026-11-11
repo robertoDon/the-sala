@@ -6,7 +6,6 @@ import { erro, t } from "../i18n";
 import { AoVivo } from "../components/AoVivo";
 import { IconeCheck, IconeEnviar, IconeGoogle, Marca } from "../components/Icones";
 import { TrocarIdioma, TrocarTema } from "./Landing";
-import { CenaPalco } from "../components/Palco";
 import "../landing.css";
 
 export default function Entrar() {
@@ -79,8 +78,7 @@ export default function Entrar() {
         <footer className="lp-entrar-rodape"><a href="/sobre">{t("Como funciona", "How it works")}</a><a href="/ajuda">{t("Ajuda", "Help")}</a><a href="/privacidade">{t("Privacidade", "Privacy")}</a><TrocarIdioma className="lp-link" /><TrocarTema className="lp-link lp-link-icone" /></footer>
       </main>
 
-      <section className="lp-entrar-vitrine lp-palco" aria-hidden>
-        <CenaPalco tipo="arco" />
+      <section className="lp-entrar-vitrine" aria-hidden>
         <AoVivo />
       </section>
     </div>

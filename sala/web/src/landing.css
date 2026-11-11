@@ -5,21 +5,17 @@
   --lp-v: 17 17 26; --lp-borda: rgba(17,17,26,.08); --lp-borda-forte: rgba(17,17,26,.14); --lp-texto2: #4F5059;
   --lp-forte: var(--tinta); --lp-sombra-funda: rgba(17,17,26,.18); --lp-marca: var(--tinta);
   --lp-largura: 1160px;
-  /* palcos: arquitetura quente desenhada atrás das vitrines, no lugar de foto (só cenário, nunca estado nem ação) */
-  --palco-parede: #DCC8AE; --palco-vao: #C7AB89; --palco-sombra: rgba(92, 60, 28, .16); --palco-luz: rgba(255, 248, 236, .5); --palco-degrau: #CDB494;
   min-height: 100%; background: var(--fundo); color: var(--tinta); overflow-x: clip;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="claro"]) .lp {
     --lp-v: 255 255 255; --lp-borda: rgba(255,255,255,.08); --lp-borda-forte: rgba(255,255,255,.14); --lp-texto2: #B4B8BF;
     --lp-sombra-funda: rgba(0,0,0,.8); color-scheme: dark;
-    --palco-parede: #2B231C; --palco-vao: #1F1915; --palco-sombra: rgba(0, 0, 0, .35); --palco-luz: rgba(255, 214, 170, .06); --palco-degrau: #251E18;
   }
 }
 :root[data-tema="escuro"] .lp {
   --lp-v: 255 255 255; --lp-borda: rgba(255,255,255,.08); --lp-borda-forte: rgba(255,255,255,.14); --lp-texto2: #B4B8BF;
   --lp-sombra-funda: rgba(0,0,0,.8); color-scheme: dark;
-  --palco-parede: #2B231C; --palco-vao: #1F1915; --palco-sombra: rgba(0, 0, 0, .35); --palco-luz: rgba(255, 214, 170, .06); --palco-degrau: #251E18;
 }
 .lp ::selection { background: color-mix(in srgb, var(--acento) 45%, transparent); }
 .lp :focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
@@ -161,16 +157,7 @@
 .lp-lista { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .lp-lista li { display: flex; gap: 10px; align-items: flex-start; color: var(--tinta); font-size: 15px; line-height: 1.45; }
 .lp-lista svg { flex: none; margin-top: 3px; color: var(--ok); }
-.lp-bloco-vitrine { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 40px 36px; border-radius: 24px; }
-/* palco: o cenário fica atrás e a tela do app flutua por cima, com sombra em degraus */
-.lp-palco { isolation: isolate; overflow: hidden; background: var(--palco-parede); border: 1px solid rgb(var(--lp-v) / .06); }
-.lp-palco-cena { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; }
-.pc-parede { fill: var(--palco-parede); }
-.pc-vao { fill: var(--palco-vao); }
-.pc-sombra { fill: var(--palco-sombra); }
-.pc-luz { fill: var(--palco-luz); }
-.pc-degrau { fill: var(--palco-degrau); }
-.lp-palco .lp-vitrine-dica { align-self: flex-start; padding: 4px 10px; border-radius: 999px; color: var(--tinta); background: color-mix(in srgb, var(--fundo) 78%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.lp-bloco-vitrine { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 24px; background: var(--app); border: 1px solid var(--lp-borda); }
 .lp-cena {
   position: relative; display: flex; flex-direction: column; gap: 4px; padding: 18px 20px 22px; border-radius: 16px; background: var(--fundo);
   box-shadow: 0 0 0 1px rgb(var(--lp-v) / .06), 0 1px 1px -.5px rgb(17 17 26 / .08), 0 3px 3px -1.5px rgb(17 17 26 / .08), 0 6px 6px -3px rgb(17 17 26 / .08), 0 12px 12px -6px rgb(17 17 26 / .08), 0 24px 24px -12px rgb(17 17 26 / .08);
@@ -197,13 +184,13 @@
 .lp-cena-rodape { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 12.5px; font-weight: 600; color: var(--ok); }
 .lp-cena-tarefas .secao-rotulo { padding: 0 8px; margin-bottom: 4px; }
 
-/* em todo lugar: o mesmo "esperando você" em quatro tamanhos, sobre um palco */
+/* em todo lugar: o mesmo "esperando você" em quatro tamanhos, numa vitrine */
 .lp-todo { max-width: var(--lp-largura); margin: 0 auto; padding: 96px 32px 24px; }
 .lp-todo .lp-secao-topo .lp-sub { text-align: center; }
-.lp-todo-palco { position: relative; padding: 56px 48px; border-radius: 28px; }
+.lp-todo-vitrine { position: relative; padding: 48px; border-radius: 28px; background: var(--app); border: 1px solid var(--lp-borda); }
 .lp-todo-grade { display: grid; grid-template-columns: 1.3fr .7fr 1.2fr; grid-template-areas: "inicio icone widget" "aviso aviso widget"; gap: 20px; align-items: stretch; }
 .lp-todo-peca { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.lp-todo-peca figcaption { align-self: flex-start; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; color: var(--tinta); background: color-mix(in srgb, var(--fundo) 78%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.lp-todo-peca figcaption { align-self: flex-start; padding: 0 4px; font-size: 12.5px; color: var(--cinza); }
 .lp-todo-inicio { grid-area: inicio; }
 .lp-todo-icone { grid-area: icone; align-items: center; }
 .lp-todo-icone figcaption { align-self: center; }
@@ -219,7 +206,7 @@
 .lp-todo-app svg circle:nth-of-type(1), .lp-todo-not-icone svg circle:nth-of-type(1) { fill: var(--fundo); }
 .lp-todo-app svg circle:nth-of-type(2), .lp-todo-not-icone svg circle:nth-of-type(2) { fill: none; stroke: var(--fundo); stroke-width: 1.8; }
 .lp-todo-app b { position: absolute; top: calc(50% - 56px); left: calc(50% + 30px); min-width: 30px; height: 30px; padding: 0 8px; border-radius: 999px; display: grid; place-items: center;
-  font: 600 15px/1 var(--corpo); font-variant-numeric: tabular-nums; background: var(--quente); color: var(--quente-tinta); box-shadow: 0 0 0 3px var(--palco-parede); }
+  font: 600 15px/1 var(--corpo); font-variant-numeric: tabular-nums; background: var(--quente); color: var(--quente-tinta); box-shadow: 0 0 0 3px var(--app); }
 .lp-todo-notificacao { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; font-size: 14px; line-height: 1.4;
   background: color-mix(in srgb, var(--fundo) 86%, transparent); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); }
 .lp-todo-not-topo { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--cinza); margin-bottom: 4px; }
@@ -294,9 +281,9 @@
   .lp-passos-min ol { grid-template-columns: 1fr; gap: 0; }
   .lp-passos-min li { padding: 22px 0; border-top: 0; border-bottom: 1px solid var(--lp-borda); }
   .lp-secao-topo { margin-bottom: 28px; }
-  .lp-bloco-vitrine { padding: 20px 12px; border-radius: 18px; }
+  .lp-bloco-vitrine { padding: 12px; border-radius: 18px; }
   .lp-todo { padding: 48px 16px 8px; }
-  .lp-todo-palco { padding: 20px 12px; border-radius: 20px; }
+  .lp-todo-vitrine { padding: 16px 12px; border-radius: 18px; }
   .lp-todo-grade { grid-template-columns: 1fr; grid-template-areas: "inicio" "icone" "aviso" "widget"; gap: 16px; }
   .lp-todo-tela h3 { font-size: 26px; }
   .lp-todo-app { min-height: 112px; }
@@ -320,12 +307,12 @@
 .lp-entrar .auth-ou::before, .lp-entrar .auth-ou::after { background: var(--lp-borda); }
 .lp-entrar-rodape { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; font-size: 13px; color: var(--cinza); }
 .lp-entrar-rodape a:hover { color: var(--tinta); }
-/* o produto rodando flutua sobre o palco (um arco com luz), como as vitrines da landing */
 .lp-entrar-vitrine {
-  position: relative; margin: 16px 16px 16px 0; border-radius: 24px;
+  position: relative; margin: 16px 16px 16px 0; border-radius: 24px; border: 1px solid var(--lp-borda);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; padding: 48px;
+  background: var(--app);
 }
-.lp-entrar-vitrine > :not(.lp-palco-cena) { position: relative; }
+.lp-entrar-vitrine > * { position: relative; }
 .lp-entrar-vitrine .aovivo { border: 0; box-shadow: 0 0 0 1px rgb(var(--lp-v) / .06), 0 1px 1px -.5px rgb(17 17 26 / .08), 0 3px 3px -1.5px rgb(17 17 26 / .08), 0 6px 6px -3px rgb(17 17 26 / .08), 0 12px 12px -6px rgb(17 17 26 / .08), 0 24px 24px -12px rgb(17 17 26 / .08); }
 .lp-entrar-vitrine .aovivo { width: 100%; max-width: 480px; }
 @media (max-width: 960px) {
@@ -336,12 +323,9 @@
 /* celular estreito: o rodapé (links e tema) cabe numa linha */
 @media (max-width: 400px) { .lp-entrar-rodape { gap: 8px 14px; } }
 
-/* convite: um cartão só, no centro do palco */
+/* convite: um cartão só, no centro da página */
 .lp-convite { display: grid; min-height: 100%; }
-/* a página inteira é o palco: uma colunata de arcos, e o cartão flutua no meio */
-.lp-convite { isolation: isolate; background: var(--palco-parede); }
-.lp-convite-cena { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
-.lp-convite .lp-marca { padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--fundo) 78%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.lp-convite::before { content: ""; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(50% 45% at 50% 30%, rgb(var(--lp-v) / .05), transparent 70%); }
 .lp-convite-centro { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; padding: 48px 16px; }
 .lp-convite-cartao { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 40px 32px 32px;
   border-radius: 20px; background: var(--fundo);

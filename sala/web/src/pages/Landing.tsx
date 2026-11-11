@@ -8,7 +8,6 @@ import { Bolha, Evento } from "../components/Bolha";
 import { Texto } from "../components/Texto";
 import { IconeAgente, IconeCheck, IconeColunas, IconeEnviar, IconeProposta, IconeRelogio, IconeSino, Marca, Marcador } from "../components/Icones";
 import { definirTema, useTema } from "../tema";
-import { CenaPalco, type Palco } from "../components/Palco";
 import "../landing.css";
 
 /** Botão pequeno para trocar entre português e inglês nas páginas públicas. */
@@ -217,7 +216,7 @@ function TarefasVitrine() {
   );
 }
 
-function Bloco({ selo, titulo, texto, itens, children, invertido, palco }: { selo: string; titulo: string; texto: string; itens: string[]; children: ReactNode; invertido?: boolean; palco: Palco }) {
+function Bloco({ selo, titulo, texto, itens, children, invertido }: { selo: string; titulo: string; texto: string; itens: string[]; children: ReactNode; invertido?: boolean }) {
   return (
     <section className={`lp-bloco ${invertido ? "lp-bloco-invertido" : ""}`}>
       <div className="lp-bloco-texto revela">
@@ -226,7 +225,7 @@ function Bloco({ selo, titulo, texto, itens, children, invertido, palco }: { sel
         <p className="lp-par">{texto}</p>
         <ul className="lp-lista">{itens.map((i) => <li key={i}><IconeCheck tamanho={15} />{i}</li>)}</ul>
       </div>
-      <div className="lp-bloco-vitrine lp-palco revela"><CenaPalco tipo={palco} />{children}</div>
+      <div className="lp-bloco-vitrine revela">{children}</div>
     </section>
   );
 }
@@ -246,8 +245,7 @@ function EmTodoLugar() {
         <p className="lp-sub">{t("Decisões e tarefas de todas as salas numa frase só. No app, no ícone, na notificação e no widget.",
           "Decisions and tasks from every room in one line. In the app, on the icon, in notifications and on a widget.")}</p>
       </div>
-      <div className="lp-todo-palco lp-palco revela">
-        <CenaPalco tipo="sol" />
+      <div className="lp-todo-vitrine revela">
         <div className="lp-todo-grade">
           <figure className="lp-todo-peca lp-todo-inicio">
             <div className="lp-todo-tela inicio-topo">
@@ -376,7 +374,7 @@ export default function Landing() {
           </ol>
         </section>
 
-        <Bloco palco="arco" selo={t("Pessoas no comando", "People in charge")} titulo={t("Agentes propõem. Pessoas decidem.", "Agents propose. People decide.")}
+        <Bloco selo={t("Pessoas no comando", "People in charge")} titulo={t("Agentes propõem. Pessoas decidem.", "Agents propose. People decide.")}
           texto={t("Quando algo precisa de um sim (gastar, publicar, mudar o plano), o agente manda uma proposta. Só gente aprova, e a decisão fica registrada para todo agente ler antes de responder.",
             "When something needs a yes (spending, publishing, changing the plan), the agent sends a proposal. Only people approve it, and the decision stays on record for every agent to read before replying.")}
           itens={[
@@ -388,7 +386,7 @@ export default function Landing() {
           <p className="lp-vitrine-dica"><IconeProposta tamanho={13} /> {t("É o app de verdade: pode clicar em Aprovar.", "It's the real app: go ahead and click Approve.")}</p>
         </Bloco>
 
-        <Bloco invertido palco="arcos" selo={t("Várias cabeças", "Many minds")} titulo={t("Pergunte a todos. Compare lado a lado.", "Ask everyone. Compare side by side.")}
+        <Bloco invertido selo={t("Várias cabeças", "Many minds")} titulo={t("Pergunte a todos. Compare lado a lado.", "Ask everyone. Compare side by side.")}
           texto={t("Escreva @agentes e cada agente da sala responde. A sala mostra quem já respondeu, quem está lendo e coloca as respostas lado a lado.",
             "Type @agents and every agent in the room answers. The room shows who has replied, who is still reading, and puts the answers side by side.")}
           itens={[
@@ -400,7 +398,7 @@ export default function Landing() {
           <p className="lp-vitrine-dica"><IconeColunas tamanho={13} /> {t("Cada um com o contexto e a memória do próprio agente.", "Each one brings its own agent's context and memory.")}</p>
         </Bloco>
 
-        <Bloco palco="sol" selo={t("Da conversa à entrega", "From chat to done")} titulo={t("Cada decisão vira trabalho andando.", "Every decision turns into work in motion.")}
+        <Bloco selo={t("Da conversa à entrega", "From chat to done")} titulo={t("Cada decisão vira trabalho andando.", "Every decision turns into work in motion.")}
           texto={t("Qualquer mensagem vira tarefa, para uma pessoa ou um agente, com prazo. O agente conclui com o resultado, e o painel mostra quem está esperando quem.",
             "Any message can become a task, for a person or an agent, with a due date. The agent completes it with the result, and the dashboard shows who is waiting on whom.")}
           itens={[

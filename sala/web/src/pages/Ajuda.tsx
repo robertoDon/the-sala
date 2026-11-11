@@ -2,11 +2,8 @@ import { isValidElement, useState } from "react";
 import { Link } from "react-router-dom";
 import { MCP_URL } from "../supabase";
 import { t, useIdioma } from "../i18n";
-import { IconeBusca, Marca } from "../components/Icones";
-import { TrocarIdioma, TrocarTema } from "./Landing";
-import { useAuth } from "../App";
-import { CenaPalco } from "../components/Palco";
-import "../landing.css";
+import { IconeBusca } from "../components/Icones";
+import { MolduraPublica } from "../components/MolduraPublica";
 
 type Item = { p: string; r: React.ReactNode };
 type Secao = { id: string; titulo: string; itens: Item[] };
@@ -151,26 +148,11 @@ export default function Ajuda() {
     ? secoes.map((s) => ({ ...s, itens: s.itens.filter((i) => sem(`${i.p} ${texto(i.r)}`).includes(termo)) })).filter((s) => s.itens.length)
     : secoes;
   const achou = filtradas.reduce((n, s) => n + s.itens.length, 0);
-  const { sessao } = useAuth();
 
-  // a mesma moldura das páginas públicas: barra da landing, a busca num cartão sobre o palco, o rodapé com tema e idioma
   return (
-    <div className="lp lp-ajuda">
-    <header className="lp-nav">
-      <div className="lp-nav-dentro">
-        <Link to="/sobre" aria-label="The Sala" className="lp-marca"><Marca /></Link>
-        <nav className="lp-nav-acoes" aria-label={t("Conta", "Account")}>
-          <Link to="/sobre" className="lp-link some-celular">{t("Como funciona", "How it works")}</Link>
-          {sessao
-            ? <Link to="/" className="lp-link lp-link-forte">{t("Minhas salas", "My rooms")}</Link>
-            : <Link to="/entrar" className="lp-link lp-link-forte">{t("Entrar", "Sign in")}</Link>}
-        </nav>
-      </div>
-    </header>
+    <MolduraPublica className="lp-ajuda">
     <main className="documento ajuda">
-      <header className="ajuda-topo lp-palco">
-        <CenaPalco tipo="arco" />
-        <div className="ajuda-cartao">
+      <header className="ajuda-topo">
         <h1 className="display">{t("Como podemos ajudar?", "How can we help?")}</h1>
         <label className="ajuda-busca">
           <IconeBusca tamanho={18} />
@@ -182,8 +164,7 @@ export default function Ajuda() {
             {secoes.map((s) => <a key={s.id} href={`#${s.id}`}>{s.titulo}</a>)}
           </nav>
         )}
-        </div>
-        {termo && <p className="nota ajuda-achou" role="status">{achou ? t(`${achou} resposta${achou > 1 ? "s" : ""} para “${q.trim()}”`, `${achou} answer${achou > 1 ? "s" : ""} for “${q.trim()}”`) : t(`Nada sobre “${q.trim()}”. Tente outra palavra ou escreva para nós.`, `No results for “${q.trim()}”. Try another word or email us.`)}</p>}
+        {termo && <p className="nota" role="status">{achou ? t(`${achou} resposta${achou > 1 ? "s" : ""} para “${q.trim()}”`, `${achou} answer${achou > 1 ? "s" : ""} for “${q.trim()}”`) : t(`Nada sobre “${q.trim()}”. Tente outra palavra ou escreva para nós.`, `No results for “${q.trim()}”. Try another word or email us.`)}</p>}
       </header>
       {filtradas.map((s) => (
         <section key={s.id} id={s.id}>
@@ -198,15 +179,6 @@ export default function Ajuda() {
       ))}
       <p className="nota">{t("Não achou? Escreva para ", "Can't find what you need? Email ")}<a className="link" href="mailto:robertobeckerbt@gmail.com">robertobeckerbt@gmail.com</a>.</p>
     </main>
-    <footer className="lp-rodape-min">
-      <span className="lp-rodape-marca"><Marca /></span>
-      <span className="lp-rodape-acoes">
-        <Link to="/sobre" className="lp-link">{t("Como funciona", "How it works")}</Link>
-        <Link to="/privacidade" className="lp-link">{t("Privacidade", "Privacy")}</Link>
-        <TrocarIdioma className="lp-link" />
-        <TrocarTema />
-      </span>
-    </footer>
-    </div>
+    </MolduraPublica>
   );
 }
