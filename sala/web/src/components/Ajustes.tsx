@@ -9,6 +9,7 @@ import { BotaoConfirmar, LinhaConfirmar } from "./Confirmar";
 import { recado } from "./Recados";
 import { Integracoes } from "./Integracoes";
 import { erro, gravado, locale, t } from "../i18n";
+import { indicador } from "./indicador";
 
 type Historico = { id: number; quem: string | null; agente: string | null; acao: string; detalhe: string | null; em: string };
 
@@ -170,7 +171,7 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
             <span id="aj-aprov" className="campo-rotulo">{t("Aprovações para uma proposta passar", "Approvals needed to pass a proposal")}</span>
             {salvo === "aprovacoes" && <span className="salvo" role="status"><IconeCheck tamanho={12} /> {t("Salvo", "Saved")}</span>}
           </div>
-          <div className="abas" role="radiogroup" aria-labelledby="aj-aprov">
+          <div className="abas" ref={indicador} role="radiogroup" aria-labelledby="aj-aprov">
             {[[1, t("1 pessoa", "1 person")], [2, t("2 pessoas", "2 people")], [20, t("Todos", "Everyone")]].map(([n, rot]) => (
               <button key={n} type="button" role="radio" aria-checked={aprovacoes === n} disabled={!dono || aprovacoes === null}
                 className={`aba ${aprovacoes === n ? "ativa" : ""}`} onClick={() => mudarAprovacoes(n as number)}>{rot}</button>
@@ -183,7 +184,7 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
             <span id="aj-idioma" className="campo-rotulo">{t("Idioma da sala", "Room language")}</span>
             {salvo === "idioma" && <span className="salvo" role="status"><IconeCheck tamanho={12} /> {t("Salvo", "Saved")}</span>}
           </div>
-          <div className="abas" role="radiogroup" aria-labelledby="aj-idioma">
+          <div className="abas" ref={indicador} role="radiogroup" aria-labelledby="aj-idioma">
             {([["pt", "Português"], ["en", "English"]] as const).map(([v, rot]) => (
               <button key={v} type="button" role="radio" aria-checked={(sala.idioma ?? "pt") === v} disabled={!dono}
                 className={`aba ${(sala.idioma ?? "pt") === v ? "ativa" : ""}`} lang={v === "en" ? "en" : "pt-BR"} onClick={() => mudarIdioma(v)}>{rot}</button>

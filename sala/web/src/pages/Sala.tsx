@@ -20,7 +20,7 @@ import { MENCAO_COLETIVA, chamaTodos, handle } from "../components/Texto";
 import { comoChama, MENCAO } from "../../../supabase/functions/_shared/agentes";
 import { definirIdiomaConversa, erro, idioma, locale, naConversa, t, tc } from "../i18n";
 import {
-  IconeAbrir, IconeAjustes, IconeAgente, IconeBusca, IconeCheck, IconeClipe, IconeCopiar, IconeTarefa, IconeColunas, IconeConvite, IconeDecisao, IconePlugue, IconeProposta, IconeVoltar, Marcador, IconeBiblioteca, IconePainel, IconeMais3,
+  IconeAbrir, IconeAjustes, IconeAgente, IconeBusca, IconeCheck, IconeClipe, IconeCopiar, IconeTarefa, IconeColunas, IconeConvite, IconeDecisao, IconePlugue, IconeProposta, IconeVoltar, Marcador, IconeBiblioteca, IconePainel, IconeMais3, SimboloVivo,
 } from "../components/Icones";
 import {
   abrirConectar, atrasada, copiarTexto, pedidoPara, presenca, sb, subirArquivo, tomDoAgente, ultimaSala,
@@ -726,7 +726,7 @@ export default function SalaPage() {
 
             {msgs !== null && msgs.length === 0 && leitor && (
               <section className="feed-vazio">
-                <span className="vazio-icone"><IconeAgente tamanho={20} /></span>
+                <span className="vazio-icone vazio-vivo" aria-hidden><SimboloVivo /></span>
                 <p><strong>{t("Ninguém falou ainda.", "No one has said anything yet.")}</strong></p>
                 <p className="nota">{leitor ? t("Quando a conversa começar, ela aparece aqui.", "The conversation will show up here once it starts.")
                   : t(`Escreva a primeira mensagem, ou pergunte a todos os agentes com @${tc("agentes", "agents")}.`, `Write the first message, or ask all agents with @${tc("agentes", "agents")}.`)}</p>

@@ -12,7 +12,9 @@
 ## Cara do The Sala (vale para todas as telas: landing, entrar, convite, app)
 
 - Símbolo: o logo é um ponto cheio (a pessoa) e um anel (o agente). O anel (`IconeAgente`) marca agente em todo lugar; nada de ícone de robô.
-- Uma cor de ação só: o roxo `--acento`, nos botões principais do app e das páginas públicas. Não é decoração (progresso é verde, gráfico é neutro).
+- Uma cor de ação só: o roxo `--acento`, nos botões principais do app e das páginas públicas. Não é decoração (gráfico é neutro).
+- Um quente só para estado: `--quente` em alerta, atraso, não lidas e barra de avanço. Nunca em botão. Concluído/aprovado continua verde (`--ok`); erro de verdade continua `--erro`.
+- Números de estado grandes, com a unidade pequena em cinza (`8 /14`). Telas vazias usam o `SimboloVivo` (o anel chegando no ponto).
 - Uma paleta: os tokens de `styles.css` (claro e escuro). As páginas públicas usam os mesmos tokens e seguem o tema da pessoa, com botão para trocar.
 - Mesma régua: Inter, títulos 600 com tracking apertado, botões com raio 8 (pequeno 7, grande 10), cartões 14–20, sombras discretas em degraus (nunca uma sombra grande e borrada).
 - Moldura de produto: a lateral fica no fundo (`--app`) e o conteúdo é um cartão por cima. Hover é neutro (`--hover`), nunca roxo.

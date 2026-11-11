@@ -4,6 +4,7 @@ import { IconeArquivo, IconeBiblioteca, IconeFechar, IconeLink, IconeMais, Icone
 import { Menu } from "./Menu";
 import { erro as msgErro, locale, t } from "../i18n";
 import { recado } from "./Recados";
+import { indicador } from "./indicador";
 
 export type ItemBiblioteca = {
   id: number; sala_id: string; user_id: string; agente: string | null; tipo: "arquivo" | "link";
@@ -203,7 +204,7 @@ function Novo({ salaId, eu, pronto }: { salaId: string; eu: string; pronto: () =
 
   return (
     <form className="tarefa-form integracao-form biblioteca-form" onSubmit={salvar} onKeyDown={(e) => e.key === "Escape" && pronto()}>
-      <div className="abas abas-mini" role="tablist" aria-label={t("Tipo", "Type")}>
+      <div className="abas abas-mini" ref={indicador} role="tablist" aria-label={t("Tipo", "Type")}>
         <button type="button" role="tab" aria-selected={tipo === "link"} className={tipo === "link" ? "aba ativa" : "aba"} onClick={() => setTipo("link")}><IconeLink tamanho={14} /> Link</button>
         <button type="button" role="tab" aria-selected={tipo === "arquivo"} className={tipo === "arquivo" ? "aba ativa" : "aba"} onClick={() => setTipo("arquivo")}><IconeArquivo tamanho={14} /> {t("Arquivo", "File")}</button>
       </div>

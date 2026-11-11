@@ -1,0 +1,4 @@
+# mídia de terceiros: fica só na máquina, recria com `python3 baixar.py .` e o ffmpeg (ver PRINCIPIOS.md)
+midia/
+contact-sheets/
+json/

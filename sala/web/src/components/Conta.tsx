@@ -8,6 +8,7 @@ import { definirTema, useTema, type Tema } from "../tema";
 import { LinhaConfirmar } from "./Confirmar";
 import { recado } from "./Recados";
 import { definirFonte, definirSom, tocarPlim, usePrefs, type Fonte } from "../preferencias";
+import { indicador } from "./indicador";
 
 const opcoes = () => [
   { valor: "mencoes", titulo: t("Quando for comigo", "When it involves me"), texto: t("Quando chamarem você, houver proposta para decidir ou responderem algo seu.", "When someone mentions you, a proposal needs your decision, or someone replies to you.") },
@@ -147,7 +148,7 @@ export function Conta({ fechar }: { fechar: () => void }) {
         <section className="conta-secao">
           <div className="campo-topo"><h3 className="secao-rotulo secao-rotulo-solto" id="conta-som">{t("Som", "Sound")}</h3>
             <button type="button" className="link nota" onClick={tocarPlim}>{t("Ouvir", "Play")}</button></div>
-          <div className="abas" role="radiogroup" aria-labelledby="conta-som">
+          <div className="abas" ref={indicador} role="radiogroup" aria-labelledby="conta-som">
             <button type="button" role="radio" aria-checked={preferencias.som === "comigo"} className={`aba ${preferencias.som === "comigo" ? "ativa" : ""}`} onClick={() => { definirSom("comigo"); tocarPlim(); }}>{t("Quando precisarem de mim", "When I'm needed")}</button>
             <button type="button" role="radio" aria-checked={preferencias.som === "nada"} className={`aba ${preferencias.som === "nada" ? "ativa" : ""}`} onClick={() => definirSom("nada")}>{t("Nunca", "Never")}</button>
           </div>
@@ -156,7 +157,7 @@ export function Conta({ fechar }: { fechar: () => void }) {
 
         <section className="conta-secao">
           <h3 className="secao-rotulo secao-rotulo-solto" id="conta-idioma">{t("Idioma", "Language")}</h3>
-          <div className="abas" role="radiogroup" aria-labelledby="conta-idioma">
+          <div className="abas" ref={indicador} role="radiogroup" aria-labelledby="conta-idioma">
             {IDIOMAS.map((o) => (
               <button key={o.valor} type="button" role="radio" aria-checked={lingua === o.valor} lang={o.valor === "en" ? "en" : "pt-BR"}
                 className={`aba ${lingua === o.valor ? "ativa" : ""}`} onClick={() => trocarIdioma(o.valor)}>{o.titulo}</button>

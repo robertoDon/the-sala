@@ -5,6 +5,7 @@ import { IconeAgente, IconeFechar, IconeMais, IconeRelogio, IconeVoltar, Marcado
 import { Menu } from "./Menu";
 import { erro as msgErro, locale, t } from "../i18n";
 import { recado } from "./Recados";
+import { indicador } from "./indicador";
 
 export type RascunhoTarefa = { titulo: string; origem: number | null; responsavel: string; prazo?: string } | null;
 
@@ -237,7 +238,7 @@ export function Tarefas({ salaId, salaNome, tarefas, membros, agentes, eu, nome,
           <input id="tarefa-rapida" value={rapida} maxLength={200} onChange={(e) => setRapida(e.target.value)}
             placeholder={t("Adicionar tarefa para você… (Enter)", "Add a task for yourself… (Enter)")} />
         </form>
-        <div className="abas abas-mini" role="tablist" aria-label={t("Filtrar", "Filter")}>
+        <div className="abas abas-mini" ref={indicador} role="tablist" aria-label={t("Filtrar", "Filter")}>
           <button role="tab" aria-selected={so === "todas"} className={so === "todas" ? "aba ativa" : "aba"} onClick={() => setSo("todas")}>{t("Todas", "All")}</button>
           <button role="tab" aria-selected={so === "minhas"} className={so === "minhas" ? "aba ativa" : "aba"} onClick={() => setSo("minhas")}>
             {t("Comigo", "Mine")}{minhasAbertas > 0 && <span className="aba-num">{minhasAbertas}</span>}

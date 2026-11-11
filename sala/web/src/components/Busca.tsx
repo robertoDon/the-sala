@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { sb, type Mensagem } from "../supabase";
 import { IconeAgente, IconeBusca, IconeFechar, IconeProposta } from "./Icones";
 import { naConversa, locale, t as tr } from "../i18n";
+import { indicador } from "./indicador";
 
 type Props = { salaId: string; autor: (m: Mensagem) => string; irPara: (id: number) => void; fechar: () => void };
 
@@ -93,7 +94,7 @@ export function Busca({ salaId, autor, irPara, fechar }: Props) {
             <button className="btn-mais campo-limpar" onClick={() => { setTermo(""); campo.current?.focus(); }} aria-label={tr("Limpar", "Clear")}><IconeFechar tamanho={14} /></button>
           )}
         </div>
-        <div className="abas abas-mini filtros" role="radiogroup" aria-label={tr("Onde buscar", "Where to search")}>
+        <div className="abas abas-mini filtros" ref={indicador} role="radiogroup" aria-label={tr("Onde buscar", "Where to search")}>
           {FILTROS.map(([id, rot]) => (
             <button key={id} role="radio" aria-checked={filtro === id} className={filtro === id ? "aba ativa" : "aba"} onClick={() => { setFiltro(id); campo.current?.focus(); }}>{rot}</button>
           ))}

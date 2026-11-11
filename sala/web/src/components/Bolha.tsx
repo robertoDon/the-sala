@@ -127,6 +127,13 @@ export function Bolha(p: Props) {
   const [faltou, setFaltou] = useState<string | null>(null); // nota do 👎 sendo escrita
   const fecharSeletor = useCallback(() => setEscolhendo(false), []);
   const caixa = useRef<HTMLTextAreaElement>(null);
+  // proposta decidida enquanto a pessoa olha: o próprio cartão confirma (não um aviso solto em outro canto)
+  const estadoAntes = useRef(m.estado);
+  const [decidiuAgora, setDecidiuAgora] = useState(false);
+  useEffect(() => {
+    if (estadoAntes.current === "pendente" && (m.estado === "aprovada" || m.estado === "recusada")) setDecidiuAgora(true);
+    estadoAntes.current = m.estado;
+  }, [m.estado]);
   // no toque a barra de ações abre por cima do texto quando algo da mensagem ganha foco
   const barra = useRef<HTMLDivElement>(null);
   const ajustarBarra = () => { const b = barra.current; if (b && getComputedStyle(b).position === "absolute") caberNaConversa(b); };
@@ -162,7 +169,7 @@ export function Bolha(p: Props) {
 
   const cls = ["msg", m.agente ? "msg-agente" : "msg-pessoa", minha ? "msg-minha" : "", m.pendente ? "msg-pendente" : "",
     m.falhou ? "msg-falhou" : "", m.fila ? "msg-na-fila" : "", continua && !proposta ? "msg-continua" : "", proposta ? "msg-proposta" : "",
-    m.apagada ? "msg-apagada" : "", p.destaque ? "msg-destaque" : ""].join(" ");
+    m.apagada ? "msg-apagada" : "", p.destaque ? "msg-destaque" : "", decidiuAgora ? "msg-decidiu" : ""].join(" ");
 
   return (
     <article className={cls} id={`m${m.id}`} tabIndex={-1} onFocus={ajustarBarra} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) barra.current?.style.removeProperty("translate"); }}>
@@ -289,6 +296,7 @@ export function Bolha(p: Props) {
                 <p className="nota">
                   {p.decisor ? tr(`Decidida por ${p.decisor}`, `Decided by ${p.decisor}`) : tr("Decidida", "Decided")}
                   {m.decidida_em && ` · ${hora(m.decidida_em)}`}
+                  {decidiuAgora && ` · ${tr("os agentes da sala já sabem", "the room's agents have been told")}`}
                 </p>
               )}
             </div>

@@ -5,7 +5,7 @@ import { Layout, corDaSala, useSalas } from "../components/Layout";
 import { modelos, NovaSala } from "../components/NovaSala";
 import { abrirComandos, atalhoComandos } from "../components/Comandos";
 import { gravado, idioma, locale, t } from "../i18n";
-import { IconeAgente, IconeBusca, IconeCheck, IconeMais, IconePlugue, IconeProposta, IconeSeta, Marcador } from "../components/Icones";
+import { IconeAgente, IconeBusca, IconeCheck, IconeMais, IconePlugue, IconeProposta, IconeSeta, Marcador, SimboloVivo } from "../components/Icones";
 import { abrirConectar, type ItemFila, type Sala } from "../supabase";
 
 const quando = (iso: string | null) => {
@@ -34,27 +34,33 @@ export default function Inicio() {
   const [criar, setCriar] = useState<string | null>(null);
   const nome = (perfil?.nome ?? "").split(" ")[0];
 
-  const saudacoes = [
-    t(`Boas-vindas de volta, ${nome}.`, `Welcome back, ${nome}.`),
-    t(`Por onde começamos hoje, ${nome}?`, `Where do we start today, ${nome}?`),
-    t(`O que precisa de você hoje, ${nome}?`, `What needs you today, ${nome}?`),
-  ];
-  const saudacao = saudacoes[new Date().getDate() % saudacoes.length];
-
   const recentes = [...(salas ?? [])].sort((a, b) => (b.ultima_em ?? "").localeCompare(a.ultima_em ?? "")).slice(0, 6);
   const novas = (salas ?? []).reduce((n, s) => n + Number(s.nao_lidas), 0);
   const comNovas = (salas ?? []).filter((s) => Number(s.nao_lidas) > 0).length;
+  const atrasadas = fila.filter((f) => f.tipo === "tarefa" && !!f.prazo && new Date(f.prazo).getTime() < Date.now()).length;
+  const decidir = fila.filter((f) => f.tipo === "proposta").length;
+
+  // A manchete é o estado, com o número na frente; o detalhe vem embaixo, em cinza.
+  const manchete = fila.length
+    ? (fila.length === 1 ? t("1 coisa espera por você.", "1 thing is waiting for you.") : t(`${fila.length} coisas esperam por você.`, `${fila.length} things are waiting for you.`))
+    : novas
+      ? t(`${novas} ${novas === 1 ? "mensagem nova" : "mensagens novas"} desde a sua última visita.`, `${novas} new ${novas === 1 ? "message" : "messages"} since your last visit.`)
+      : t(`Tudo em dia, ${nome}.`, `All caught up, ${nome}.`);
   const resumo = [
-    fila.length ? (fila.length === 1 ? t("1 coisa espera por você", "1 thing is waiting for you") : t(`${fila.length} coisas esperam por você`, `${fila.length} things are waiting for you`)) : t("Nada esperando por você", "Nothing is waiting for you"),
-    novas ? t(`${novas} ${novas === 1 ? "mensagem nova" : "mensagens novas"} em ${comNovas} ${comNovas === 1 ? "sala" : "salas"}`, `${novas} new ${novas === 1 ? "message" : "messages"} in ${comNovas} ${comNovas === 1 ? "room" : "rooms"}`) : "",
+    decidir ? t(`${decidir} ${decidir === 1 ? "decisão" : "decisões"} para tomar`, `${decidir} ${decidir === 1 ? "decision" : "decisions"} to make`) : "",
+    atrasadas ? t(`${atrasadas} ${atrasadas === 1 ? "tarefa atrasada" : "tarefas atrasadas"}`, `${atrasadas} overdue ${atrasadas === 1 ? "task" : "tasks"}`) : "",
+    fila.length && novas ? t(`${novas} ${novas === 1 ? "mensagem nova" : "mensagens novas"} em ${comNovas} ${comNovas === 1 ? "sala" : "salas"}`, `${novas} new ${novas === 1 ? "message" : "messages"} in ${comNovas} ${comNovas === 1 ? "room" : "rooms"}`) : "",
+    !fila.length && novas ? t(`Em ${comNovas} ${comNovas === 1 ? "sala" : "salas"}. Nada pede a sua decisão.`, `In ${comNovas} ${comNovas === 1 ? "room" : "rooms"}. Nothing needs your decision.`) : "",
+    !fila.length && !novas ? t("Quando alguém pedir a sua decisão, aparece aqui.", "When someone needs your decision, it shows up here.") : "",
   ].filter(Boolean).join(" · ");
+  const hoje = new Date().toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "short" }).replace(".", "");
 
   return (
     <Layout salas={salas} recarregar={recarregar} fila={fila}>
       <div className="inicio">
         {salas && !salas.length && (
           <section className="inicio-primeira">
-            <span className="vazio-icone" aria-hidden><IconeMais tamanho={20} /></span>
+            <span className="vazio-icone vazio-vivo" aria-hidden><SimboloVivo /></span>
             <h1>{t(`Boas-vindas, ${nome}. Crie a sua primeira sala.`, `Welcome, ${nome}. Create your first room.`)}</h1>
             <p className="sub">{t("Uma sala por assunto. Depois é só chamar quem trabalha com você e cada pessoa conecta o próprio agente.", "One room per topic. Then invite the people you work with, and everyone connects their own agent.")}</p>
             <div className="modelos-inicio">
@@ -72,8 +78,9 @@ export default function Inicio() {
         {salas && salas.length > 0 && (
           <>
             <header className="inicio-topo">
-              <h1>{saudacao}</h1>
-              <p className="sub">{resumo}.</p>
+              <span className="rotulo-vivo">{hoje.charAt(0).toUpperCase() + hoje.slice(1)}</span>
+              <h1>{manchete}</h1>
+              {resumo && <p className="sub">{resumo.endsWith(".") ? resumo : `${resumo}.`}</p>}
             </header>
 
             <section className="inicio-secao" aria-labelledby="inicio-espera">

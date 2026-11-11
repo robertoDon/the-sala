@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { sb, type DadosPainel, type Tarefa } from "../supabase";
-import { IconeFechar, IconePainel } from "./Icones";
+import { IconeFechar, SimboloVivo } from "./Icones";
 import { locale, t } from "../i18n";
 
 type Props = {
@@ -62,7 +62,7 @@ export function PainelSala({ salaId, eu, versao, tarefas, irPara, abrirTarefas, 
 
       {vazio && (
         <section className="painel-secao painel-vazio">
-          <span className="vazio-icone" aria-hidden><IconePainel tamanho={20} /></span>
+          <span className="vazio-icone vazio-vivo" aria-hidden><SimboloVivo /></span>
           <p><strong>{t("O painel se preenche sozinho.", "The dashboard fills in on its own.")}</strong></p>
           <p className="nota">{t("Ele mostra as tarefas e as propostas da sala. Para começar, peça ao seu agente um plano: \"quebra o descritivo em tarefas por módulo, com responsável e prazo\".",
             "It shows the room's tasks and proposals. To get started, ask your agent for a plan: \"break the spec into tasks by module, each with an owner and a due date\".")}</p>
@@ -71,6 +71,21 @@ export function PainelSala({ salaId, eu, versao, tarefas, irPara, abrirTarefas, 
 
       {d && !vazio && (
         <>
+          <section className="kpis" aria-label={t("Em números", "In numbers")}>
+            <div className="kpi">
+              <span className="kpi-rotulo">{t("Feitas", "Done")}</span>
+              <span className="kpi-valor">{d.totais.feitas}<span className="kpi-unid">/{d.totais.feitas + d.totais.abertas}</span></span>
+            </div>
+            <div className="kpi">
+              <span className="kpi-rotulo">{t("Para decidir", "To decide")}</span>
+              <span className="kpi-valor">{d.propostas.length}</span>
+            </div>
+            <div className={`kpi ${d.totais.atrasadas ? "kpi-alerta" : ""}`}>
+              <span className="kpi-rotulo">{t("Atrasadas", "Overdue")}</span>
+              <span className="kpi-valor">{d.totais.atrasadas}</span>
+            </div>
+          </section>
+
           <section className="painel-lista" aria-labelledby="pn-espera">
             <h3 className="secao-rotulo" id="pn-espera">{t("Precisa de alguém", "Waiting on someone")}</h3>
             {!d.propostas.length && !d.totais.atrasadas && !d.totais.sem_responsavel ? (

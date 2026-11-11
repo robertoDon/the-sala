@@ -26,6 +26,16 @@ export const IconeAgente = ({ tamanho }: P) => (
   <svg {...base(tamanho)} strokeWidth={2.4}><circle cx="12" cy="12" r="6.5" /></svg>
 );
 
+// O símbolo vivo para telas vazias: o anel (agente) chega perto do ponto (pessoa), assenta e solta um eco.
+// Parado (movimento reduzido), fica no lugar de descanso.
+export const SimboloVivo = ({ tamanho = 32 }: P) => (
+  <svg className="simbolo-vivo" width={tamanho} height={tamanho} viewBox="0 0 32 32" aria-hidden overflow="visible">
+    <circle className="sv-eco" cx="20.5" cy="16" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.2" />
+    <circle className="sv-ponto" cx="10.5" cy="16" r="4.8" fill="currentColor" />
+    <circle className="sv-anel" cx="20.5" cy="16" r="4.2" fill="none" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+
 export const Marca = () => (
   <div className="marca">
     <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden>
