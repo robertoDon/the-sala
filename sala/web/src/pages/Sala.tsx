@@ -267,13 +267,16 @@ export default function SalaPage() {
         setMsgs((atual) => atual?.map((x) => (x.id === m.id ? { ...x, ...m } : x)) ?? atual);
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "membros", filter: `sala_id=eq.${id}` }, carregarMembros)
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "membros" }, carregarMembros)
+      // o que foi tirado (pessoa da sala, reação) chega como sinal: exclusão não vem pelo tempo real
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "sinais", filter: `sala_id=eq.${id}` }, (p) => {
+        const s = p.new as { tipo: string; ref: number | null };
+        if (s.tipo === "membro") carregarMembros();
+        if (s.tipo === "reacao" && s.ref) setReacoes((atual) => atual.filter((r) => r.id !== s.ref));
+      })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "tarefas", filter: `sala_id=eq.${id}` }, (p) => { mudouTarefa(p.new as Tarefa); recarregar(); })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "tarefas", filter: `sala_id=eq.${id}` }, (p) => { mudouTarefa(p.new as Tarefa); recarregar(); })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "votos", filter: `sala_id=eq.${id}` }, carregarVotos)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "reacoes", filter: `sala_id=eq.${id}` }, (p) => setReacoes((atual) => juntarReacoes(atual, [p.new as Reacao])))
-      // apagar não aceita filtro no tempo real e chega só com o id: tira pelo id
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "reacoes" }, (p) => setReacoes((atual) => atual.filter((r) => r.id !== (p.old as Reacao).id)))
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "agentes" }, (p) => atualizarPresenca(p.new as Agente))
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "agentes" }, (p) => atualizarPresenca(p.new as Agente))
       // assina antes de ler: nada que chegue no meio se perde

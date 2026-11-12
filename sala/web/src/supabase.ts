@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { definirIdioma, t, type Idioma } from "./i18n";
+import { tipoSeguro } from "../../supabase/functions/_shared/arquivos";
 
 // Chave publicável: pode ficar no código. Quem protege os dados são as regras (RLS) do banco.
 export const SUPABASE_URL = "https://cokzyrdmtnbsnnboxggp.supabase.co";
@@ -124,9 +125,11 @@ export async function subirArquivo(sala: string, eu: string, f: File): Promise<A
   if (f.size > LIMITE_ARQUIVO) throw new Error(t(`${f.name} passa de 10 MB.`, `${f.name} is over 10 MB.`));
   const nome = (f.name || "arquivo").replace(/[\/\\\x00-\x1f]/g, "-").trim().slice(0, 200) || "arquivo";
   const path = `${sala}/${eu}/${crypto.randomUUID()}-${chaveDoNome(nome)}`;
-  const { error } = await sb.storage.from("arquivos").upload(path, f, { contentType: f.type || "application/octet-stream" });
+  // página, SVG e script são guardados como texto simples; tipo desconhecido, como arquivo genérico (só baixa)
+  const tipo = tipoSeguro(f.type);
+  const { error } = await sb.storage.from("arquivos").upload(path, f, { contentType: tipo });
   if (error) throw new Error(t(`Não deu para enviar ${nome}: ${error.message}`, `Couldn't upload ${nome}: ${error.message}`));
-  return { path, nome, tipo: f.type || "application/octet-stream", tamanho: f.size };
+  return { path, nome, tipo, tamanho: f.size };
 }
 
 // links temporários (valem 1 h), guardados por 45 min para não pedir de novo a cada tela; quem mostra renova antes de vencer

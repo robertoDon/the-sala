@@ -52,7 +52,8 @@ export function useSalas() {
         if (chamou || (m.tipo === "proposta" && m.user_id !== eu.id)) tocarPlim();
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "membros" }, depois)
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "membros" }, depois)
+      // alguém saiu de uma sala sua, ou tiraram você de uma: chega como sinal (exclusão não vem pelo tempo real)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "sinais" }, (p) => { if ((p.new as { tipo?: string }).tipo === "membro") depois(); })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "votos" }, depois)
       .on("postgres_changes", { event: "*", schema: "public", table: "tarefas" }, depois)
       // voltou a conexão do tempo real: o que mudou no meio não chegou, então relê

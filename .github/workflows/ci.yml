@@ -1,4 +1,4 @@
-# The Sala: confere tudo a cada envio (grátis no GitHub Actions).
+# The Sala: confere tudo a cada envio, no GitHub Actions.
 name: Conferir
 
 on:

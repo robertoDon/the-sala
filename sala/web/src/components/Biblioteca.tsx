@@ -49,8 +49,10 @@ export function Biblioteca({ salaId, eu, podeEscrever, nome, fechar, abrirMemori
       .then(({ data: d }) => vivo && setItens((d as ItemBiblioteca[]) ?? []));
     carregar();
     const canal = sb.channel(`biblioteca:${salaId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "biblioteca", filter: `sala_id=eq.${salaId}` }, carregar)
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "biblioteca" }, carregar)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "biblioteca", filter: `sala_id=eq.${salaId}` }, carregar)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "biblioteca", filter: `sala_id=eq.${salaId}` }, carregar)
+      // item tirado chega como sinal (exclusão não vem pelo tempo real)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "sinais", filter: `sala_id=eq.${salaId}` }, (p) => { if ((p.new as { tipo?: string }).tipo === "biblioteca") carregar(); })
       .subscribe();
     return () => { vivo = false; sb.removeChannel(canal); };
   }, [salaId]);

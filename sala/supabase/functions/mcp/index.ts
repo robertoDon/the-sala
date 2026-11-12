@@ -29,6 +29,7 @@
 // Deploy com verify_jwt = false (a função valida o token ela mesma).
 
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
+import { tipoSeguro } from "../_shared/arquivos.ts";
 import { chama, handle, mencoes, montarRoster, nomeDeAgente, nomeDoApp, papelDeAgente, resolverAgente, rosterTexto, type AgenteRoster, type PessoaRoster } from "../_shared/agentes.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -694,7 +695,9 @@ async function atualizarMemoria(q: Quem, s: Sala, a: Record<string, unknown>) {
 const TEXTO = /^(text\/|application\/(json|xml|csv|javascript|x-yaml|yaml|sql|x-sh|markdown))/;
 const ehTexto = (tipo: string, nome: string) => TEXTO.test(tipo) || /\.(md|txt|csv|json|ya?ml|xml|html?|js|ts|tsx|py|sql|sh|css)$/i.test(nome);
 
-const tipoPorNome = (nome: string) => {
+// o tipo com que o arquivo de texto é guardado: página, script e afins vão como texto simples (ver _shared/arquivos.ts)
+const tipoPorNome = (nome: string) => tipoSeguro(tipoBruto(nome));
+const tipoBruto = (nome: string) => {
   const ext = nome.split(".").pop()?.toLowerCase() ?? "";
   return ({ md: "text/markdown", txt: "text/plain", csv: "text/csv", json: "application/json", html: "text/html", htm: "text/html",
     xml: "application/xml", yaml: "application/yaml", yml: "application/yaml", js: "text/javascript", ts: "text/plain", py: "text/x-python",
@@ -780,7 +783,7 @@ async function subirTexto(q: Quem, sala: string, nome: string, conteudo: string,
   if (bytes.length > 1048576) throw new Falha(tr(q, "Arquivo de texto acima de 1 MB.", "Text file over 1 MB."));
   const tipo = tipoPorNome(limpo);
   const path = `${sala}/${q.userId}/${crypto.randomUUID()}-${chave}`;
-  const { error } = await db.storage.from("arquivos").upload(path, bytes, { contentType: `${tipo}; charset=utf-8` });
+  const { error } = await db.storage.from("arquivos").upload(path, bytes, { contentType: tipo });
   if (error) throw new Falha(tr(q, "Não deu para guardar o arquivo: ", "Couldn't save the file: ") + error.message, 500);
   return { path, nome: limpo, tipo, tamanho: bytes.length };
 }
@@ -2024,7 +2027,7 @@ async function desinscrever(q: Quem, p: any) {
 // manda versão, cliente e capacidades em cada pedido (_meta) e começa por server/discover. Na nova, todo resultado
 // leva resultType, e as listas levam dicas de cache.
 const VERSOES = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVIDOR = { name: "sala", title: "The Sala", version: "4.36.0" };
+const SERVIDOR = { name: "sala", title: "The Sala", version: "4.37.0" };
 const versaoModerna = (msg: any): string | undefined => msg?.params?._meta?.["io.modelcontextprotocol/protocolVersion"];
 
 async function mcp(q: Quem, msg: any) {

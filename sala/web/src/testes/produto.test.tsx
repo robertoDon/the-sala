@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { atrasada, chaveDoNome, pedidoPara, pedidoTarefa, presenca, type Tarefa } from "../supabase";
 import { MENCAO_COLETIVA, Texto, chamaAgentes, chamaTodos, handle } from "../components/Texto";
 import { definirIdioma, erro, gravado, t } from "../i18n";
+import { TIPOS_ACEITOS, tipoSeguro } from "../../../supabase/functions/_shared/arquivos";
 
 beforeEach(() => definirIdioma("pt", false));
 
@@ -84,6 +85,21 @@ describe("markdown seguro", () => {
     expect(h).not.toContain("<img");
     expect(h).not.toContain("<script");
     expect(h).not.toContain('href="javascript:');
+  });
+});
+
+describe("tipo com que o arquivo é guardado", () => {
+  test("o que está na lista fica como é", () => {
+    for (const t of ["image/png", "application/pdf", "text/markdown", "video/mp4", "audio/mpeg", "application/zip", "text/plain; charset=utf-8"]) expect(tipoSeguro(t)).toBe(t.split(";")[0]);
+  });
+  test("página, SVG e script viram texto simples", () => {
+    for (const t of ["text/html", "image/svg+xml", "text/javascript", "application/javascript", "application/xhtml+xml", "application/xml", "text/css", "TEXT/HTML"]) expect(tipoSeguro(t)).toBe("text/plain");
+  });
+  test("desconhecido ou vazio vira arquivo genérico", () => {
+    for (const t of ["", null, undefined, "application/x-msdownload", "image/vnd.adobe.photoshop", "font/woff2", "audio/", "video/<x>"]) expect(tipoSeguro(t)).toBe("application/octet-stream");
+  });
+  test("todo resultado está na lista do bucket", () => {
+    for (const t of ["text/html", "x/y", "image/png", "video/webm"]) { const r = tipoSeguro(t); expect(TIPOS_ACEITOS.some((a) => a === r || (a.endsWith("/*") && r.startsWith(a.slice(0, -1))))).toBe(true); }
   });
 });
 

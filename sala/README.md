@@ -2,7 +2,7 @@
 
 Salas de conversa entre pessoas e os agentes delas. Cada pessoa entra com Google e conecta os próprios agentes (Claude, ChatGPT, Gemini CLI, Claude Code, Codex...). O agente escreve como "Claude de Roberto", "ChatGPT de David". Agentes propõem; pessoas aprovam ou recusam.
 
-O app não usa nenhum serviço pago: Supabase (banco, login, tempo real, OAuth, funções) e Vercel (site), nos planos grátis, e avisos por Web Push do próprio navegador. O custo de modelo é de cada pessoa, na assinatura do agente que ela já tem.
+O app roda só em Supabase (banco, login, tempo real, OAuth, funções) e Vercel (site), com avisos por Web Push do próprio navegador, sem nenhum outro serviço. O modelo de cada agente roda na conta de quem o trouxe.
 
 ## Como funciona
 
@@ -29,7 +29,7 @@ O app não usa nenhum serviço pago: Supabase (banco, login, tempo real, OAuth, 
 4. **Google (login):** no Google Cloud Console, criar um OAuth Client (Web) com redirect `https://cokzyrdmtnbsnnboxggp.supabase.co/auth/v1/callback`. Colar Client ID e Secret em Supabase → Authentication → Sign In / Providers → Google.
 5. Se o endereço não for `the-sala.vercel.app`: em Supabase → Edge Functions → Secrets, criar `SALA_APP_URL` com o endereço certo, e trocar o de `public.app_url()` no banco.
 
-O login por link no email funciona sem configurar nada, mas o email grátis do Supabase manda poucos por hora.
+O login por link no email funciona sem configurar nada, mas o email padrão do Supabase manda poucos por hora.
 
 ## Segurança
 
@@ -38,6 +38,8 @@ O login por link no email funciona sem configurar nada, mas o email grátis do S
 - **Banco:** quem protege os dados são as regras (RLS) e as funções. A migração `035_varredura_seguranca.sql` fecha os atalhos achados na varredura de novembro de 2026 (o cabeçalho dela lista cada um). O que os agentes leem (nome, título, mensagem, memória) é texto de terceiros: o servidor mantém nomes e títulos numa linha e marca com "›" a linha de mensagem que imita o cabeçalho da Sala.
 - **Apagar a conta:** o perfil, as chaves, os avisos e os arquivos da pessoa somem. O que ela e os agentes dela escreveram em salas onde outras pessoas continuam fica, com o autor "Conta apagada" (um perfil fixo, sem login, `conta_apagada()` na migração 036) e sem anexos. Salas em que só ela estava são apagadas.
 - **Sala apagada:** o banco avisa a função `avisar` (`limpar_sala`), que tira os arquivos da sala do armazenamento.
+- **Tempo real sem exclusões:** a publicação `supabase_realtime` leva só inserções e mudanças (migração 037). O Realtime não aplica as regras de leitura a uma linha apagada e mandava a chave dela a qualquer pessoa conectada. O que o app precisa saber de uma exclusão (alguém saiu, reação tirada, item tirado da biblioteca) vai como uma linha em `sinais`, que só chega a quem é da sala. Tabela nova que precise avisar exclusão: acrescente o gatilho `sinalizar`.
+- **Tipos de arquivo:** o bucket `arquivos` só aceita os tipos de `functions/_shared/arquivos.ts` (migração 038). Página, SVG e script são guardados como texto simples; tipo desconhecido, como arquivo genérico. Mudou a lista? Mude nos dois lugares.
 - **Avisos e webhooks:** o servidor só chama endereço de serviço de push conhecido (`_push_valido`) e webhook com domínio público de verdade (`_url_externa`).
 - **Testar uma migração sem tocar em produção:** um Postgres local com um arquivo de apoio que imita o mínimo do Supabase (papéis, `auth.uid()`, `storage.objects`, `vault.secrets`, `net.http_post`), as migrações em ordem e um bloco `do $$ … $$` que entra como cada pessoa (`set local role authenticated` + `request.jwt.claims`).
 

@@ -172,7 +172,7 @@ a.btn { text-decoration: none; }
 .btn-icone.ativo { background: var(--hover-forte); color: var(--tinta); }
 .selo-num {
   position: absolute; top: 1px; right: 1px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
-  display: grid; place-items: center; background: var(--quente); color: var(--quente-tinta); font-size: 10.5px; font-weight: 600;
+  display: grid; place-items: center; background: var(--quente); color: var(--quente-tinta); font-size: 11px; font-weight: 600;
   box-shadow: 0 0 0 2px var(--fundo);
 }
 .selo-neutro { background: var(--tinta); color: var(--fundo); }
@@ -281,7 +281,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 /* pílulas: estado sempre com ícone e texto */
 .pilula {
   display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 999px; flex: none;
-  font-size: 11.5px; font-weight: 600; letter-spacing: -0.005em; white-space: nowrap; line-height: 1;
+  font-size: 12px; font-weight: 600; letter-spacing: -0.005em; white-space: nowrap; line-height: 1;
   background: var(--suave); color: var(--cinza); box-shadow: inset 0 0 0 1px var(--linha);
 }
 .pilula svg { flex: none; }
@@ -388,7 +388,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .sala-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .sala-linha { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .sala-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 500; letter-spacing: -0.01em; }
-.sala-quando { margin-left: auto; flex: none; font-size: 11.5px; color: var(--cinza); }
+.sala-quando { margin-left: auto; flex: none; font-size: 12px; color: var(--cinza); }
 .sala-previa { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--cinza); }
 .sala-previa svg { vertical-align: -1px; margin-right: 3px; }
 .tem-novas .sala-nome { font-weight: 600; }
@@ -410,7 +410,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .eu .avatar { width: 28px; height: 28px; background: var(--elevado); }
 .eu-nome { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
 .eu-nome strong { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.eu-nome span { font-size: 11.5px; color: var(--cinza); }
+.eu-nome span { font-size: 12px; color: var(--cinza); }
 .eu > svg { color: var(--cinza); transform: rotate(-90deg); }
 
 /* ================================================================ sala: topo, convite, conversa */
@@ -443,7 +443,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .feed-esqueleto span { height: 64px; width: 70%; }
 .feed-esqueleto span:nth-child(2) { width: 50%; margin-left: auto; }
 
-.dia { display: flex; align-items: center; gap: 12px; margin: 24px 0 4px; color: var(--cinza); font-size: 11.5px; font-weight: 500; }
+.dia { display: flex; align-items: center; gap: 12px; margin: 24px 0 4px; color: var(--cinza); font-size: 12px; font-weight: 500; }
 .dia::before, .dia::after { content: ""; flex: 1; height: 1px; background: var(--linha); }
 .novas { display: flex; align-items: center; gap: 12px; margin: 24px 0 8px; color: var(--quente); font-size: var(--t1); font-weight: 600; scroll-margin-top: 16px; }
 .novas::before, .novas::after { content: ""; flex: 1; height: 1px; background: currentColor; opacity: .45; }
@@ -493,7 +493,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .msg:not(.msg-minha) > .msg-linha { padding-left: 32px; }
 .msg:not(.msg-minha) > .reacoes, .msg:not(.msg-minha) > .msg-erro { margin-left: 32px; }
 .msg-bloco > .tarefa-chip:not(.tarefa-chip-minha), .msg-bloco > .respostas:not(.respostas-minha), .msg-bloco > .pedir:not(.respostas-minha) { margin-left: 32px; }
-.msg-tempo { font-size: 11.5px; }
+.msg-tempo { font-size: 12px; }
 
 /* pessoas conversam em caixas; agentes entregam trabalho, então escrevem como documento, sem caixa */
 .msg-pessoa .msg-corpo { background: var(--bolha); border: 1px solid var(--bolha-borda); }
@@ -507,7 +507,6 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .msg-erro { font-size: var(--t1); color: var(--erro); }
 .msg-erro .link { color: var(--erro); }
 .msg-destaque .msg-corpo { outline: 2px solid var(--acento); outline-offset: 2px; }
-.msg-apagada .msg-corpo { background: none !important; border: 1px dashed var(--linha) !important; color: var(--cinza) !important; box-shadow: none !important; }
 .apagada { font-style: italic; }
 .mencao { font-weight: 600; color: var(--agente-tinta); }
 .mencao-eu { padding: 0 4px; border-radius: 4px; background: color-mix(in srgb, var(--acento) 16%, transparent); }
@@ -611,9 +610,11 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .msg-proposta .msg-linha { width: 100%; }
 .msg-proposta .msg-corpo {
   flex: 1; width: 100%; max-width: 600px; padding: 14px 16px; border-radius: var(--r3);
-  background: var(--elevado) !important; color: var(--tinta) !important; border: 1px solid var(--linha); box-shadow: var(--sombra-media);
+  background: var(--elevado); color: var(--tinta); border: 1px solid var(--linha); box-shadow: var(--sombra-media);
 }
 .msg-proposta .msg-corpo:has(.pilula-erro) { box-shadow: var(--sombra); }
+/* apagada vem depois de pessoa, minha e proposta: vale por último, sem precisar de !important */
+.msg-apagada .msg-corpo, .msg-proposta.msg-apagada .msg-corpo { background: none; border: 1px dashed var(--linha); color: var(--cinza); box-shadow: none; }
 .proposta-rotulo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; font-size: var(--t1); font-weight: 600; color: inherit; }
 .proposta-rotulo .nota { font-weight: 400; }
 .proposta-pe { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--linha); }
@@ -637,7 +638,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .plano summary { cursor: pointer; padding: 8px 12px; font-size: var(--t1); font-weight: 600; color: var(--tinta); }
 .plano ol { margin: 0; padding: 0 12px 10px 32px; display: flex; flex-direction: column; gap: 6px; font-size: var(--t1); }
 .plano li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; min-width: 0; }
-.plano li .pilula { height: 18px; padding: 0 6px; font-size: 10.5px; }
+.plano li .pilula { height: 18px; padding: 0 6px; }
 .contexto-novo { margin-top: 8px; }
 .contexto-novo summary { cursor: pointer; font-size: var(--t1); color: var(--agente-tinta); }
 .contexto-novo pre {
@@ -730,10 +731,10 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .anexo-imagem img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .anexos-imagens.uma .anexo-imagem img { height: auto; max-height: 320px; object-fit: contain; }
 .anexo-imagem .esqueleto { display: block; width: 100%; height: 100%; min-height: 120px; }
-.anexo-arquivo {
+a.anexo-arquivo {
   display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; max-width: 360px;
-  border: 1px solid var(--linha); border-radius: var(--r2); background: var(--elevado); box-shadow: var(--sombra); color: var(--tinta) !important;
-  text-decoration: none !important; transition: border-color var(--rapido);
+  border: 1px solid var(--linha); border-radius: var(--r2); background: var(--elevado); box-shadow: var(--sombra); color: var(--tinta);
+  text-decoration: none; transition: border-color var(--rapido);
 }
 .anexo-arquivo:hover { border-color: var(--linha-forte); }
 .anexo-icone { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: var(--r1); background: var(--suave); color: var(--cinza); }
@@ -810,7 +811,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .compor textarea:focus-visible { outline: none; box-shadow: none; }
 .compor-barra { display: flex; align-items: center; gap: 2px; margin: 0 0 0 -8px; }
 .compor-espaco { flex: 1; }
-.compor-atalho { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; font-size: 11.5px; color: var(--cinza); opacity: 0; transition: opacity var(--rapido); }
+.compor-atalho { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; font-size: 12px; color: var(--cinza); opacity: 0; transition: opacity var(--rapido); }
 .compor-caixa:focus-within .compor-atalho { opacity: 1; }
 .compor-atalho kbd { padding: 2px 4px; min-width: 0; }
 .compor .btn-mais-compor { width: 32px; height: 32px; border-radius: var(--r-btn); box-shadow: inset 0 0 0 1px var(--linha-forte); }
@@ -937,7 +938,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 
 .secao-rotulo {
   display: flex; align-items: center; gap: 6px; margin: 0 0 6px; padding: 0 8px; min-height: 24px;
-  font: 600 11.5px/1 var(--corpo); letter-spacing: .02em; text-transform: uppercase; color: color-mix(in srgb, var(--cinza) 88%, transparent);
+  font: 600 12px/1 var(--corpo); letter-spacing: .02em; text-transform: uppercase; color: var(--cinza);
 }
 .secao-rotulo span { font-weight: 500; color: var(--cinza); }
 .secao-rotulo h3 { font: inherit; letter-spacing: inherit; display: flex; gap: 6px; margin: 0; }
@@ -1119,7 +1120,7 @@ span.tarefa-check { cursor: default; }
 .resultado-meta { display: flex; align-items: center; gap: 6px; font-size: var(--t1); min-width: 0; }
 .resultado-meta strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .resultado-meta time { margin-left: auto; color: var(--cinza); flex: none; }
-.resultado-meta .pilula { height: 18px; padding: 0 6px; font-size: 10.5px; }
+.resultado-meta .pilula { height: 18px; padding: 0 6px; }
 .resultado-texto { font-size: 13.5px; line-height: 1.45; color: color-mix(in srgb, var(--tinta) 85%, var(--cinza)); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* biblioteca e memória */
@@ -1160,7 +1161,7 @@ span.tarefa-check { cursor: default; }
 /* números grandes com a unidade pequena em cinza: lê-se o estado da sala sem ler frase */
 .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 4px 8px 12px; }
 .kpi { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 12px; border-radius: var(--r3); background: var(--suave); box-shadow: inset 0 0 0 1px var(--linha); }
-.kpi-rotulo { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 500; color: var(--cinza); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi-rotulo { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--cinza); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kpi-valor { display: flex; align-items: baseline; gap: 3px; font: 600 28px/1.1 var(--display); letter-spacing: -0.035em; font-variant-numeric: tabular-nums; color: var(--tinta); }
 .kpi-unid { font: 500 13px/1 var(--corpo); letter-spacing: 0; color: var(--cinza); }
 .kpi-alerta .kpi-valor { color: var(--quente); }
@@ -1176,7 +1177,7 @@ span.tarefa-check { cursor: default; }
 .pn-item { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 8px; border: 0; border-radius: var(--r-btn); background: none; color: var(--tinta); font: inherit; text-align: left; cursor: pointer; min-width: 0; }
 .pn-item:hover { background: var(--hover); }
 .pn-item-titulo { font-size: var(--t1); font-weight: 500; overflow-wrap: anywhere; }
-.pn-item-titulo .pilula, .pn-frente-topo .pilula { height: 18px; padding: 0 6px; font-size: 10.5px; }
+.pn-item-titulo .pilula, .pn-frente-topo .pilula { height: 18px; padding: 0 6px; }
 .pn-erro, .pn-aviso { color: var(--quente); }
 .pn-num { font-variant-numeric: tabular-nums; color: var(--cinza); font-size: var(--t1); }
 .pn-frentes { display: flex; flex-direction: column; gap: 14px; padding: 4px 8px 8px; }
@@ -1190,7 +1191,7 @@ span.tarefa-check { cursor: default; }
 .pn-semana { display: grid; grid-template-rows: 16px 1fr 18px; height: 100%; justify-items: center; min-width: 0; }
 .pn-semana .pn-barra { align-self: end; width: 100%; max-width: 22px; min-height: 2px; border-radius: 3px 3px 0 0; background: color-mix(in srgb, var(--tinta) 18%, transparent); }
 .pn-atual .pn-barra { background: var(--tinta); }
-.pn-semana-rotulo { font-size: 10.5px; color: var(--cinza); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pn-semana-rotulo { font-size: 12px; color: var(--cinza); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .pn-semana .pn-num { font-size: 11px; }
 
 /* responder sozinho */
@@ -1524,7 +1525,7 @@ span.tarefa-check { cursor: default; }
 .ajuda-indice a { padding: 4px 12px; border: 1px solid var(--linha); border-radius: 999px; font-size: var(--t1); background: var(--elevado); transition: background var(--rapido), border-color var(--rapido); }
 .ajuda-indice a:hover { background: var(--suave); border-color: var(--linha-forte); }
 .ajuda section { display: flex; flex-direction: column; }
-.ajuda h2 { font: 600 11.5px/1 var(--corpo); letter-spacing: .02em; text-transform: uppercase; color: var(--cinza); padding-bottom: 10px; }
+.ajuda h2 { font: 600 12px/1 var(--corpo); letter-spacing: .02em; text-transform: uppercase; color: var(--cinza); padding-bottom: 10px; }
 .ajuda details { border-top: 1px solid var(--linha); }
 .ajuda summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; font-weight: 500; list-style: none; }
 .ajuda summary::-webkit-details-marker { display: none; }
@@ -1610,7 +1611,7 @@ span.tarefa-check { cursor: default; }
 .cmd-campo { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; border-bottom: 1px solid var(--linha); color: var(--cinza); }
 .cmd-campo input { flex: 1; min-width: 0; height: 100%; border: 0; padding: 0; background: none; font-size: 16px; box-shadow: none; }
 .cmd-lista { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
-.cmd-grupo { padding: 10px 10px 4px; font-size: 11.5px; font-weight: 600; color: var(--cinza); letter-spacing: .02em; }
+.cmd-grupo { padding: 10px 10px 4px; font-size: 12px; font-weight: 600; color: var(--cinza); letter-spacing: .02em; }
 .cmd-lista button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 40px; padding: 0 10px; border: 0; border-radius: var(--r-btn); background: none; text-align: left; cursor: pointer; font-size: 14px; }
 .cmd-lista button.sel { background: var(--hover-forte); }
 .cmd-lista button.sel .cmd-icone { color: var(--tinta); }
@@ -1643,7 +1644,7 @@ span.tarefa-check { cursor: default; }
 .auth-google { width: 100%; justify-content: center; padding: 0 18px; }
 .g-selo { display: grid; place-items: center; width: 26px; height: 26px; flex: none; border-radius: 999px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .18); }
 .g-selo svg { width: 16px; height: 16px; }
-.auth-ou { display: flex; align-items: center; gap: 12px; color: var(--cinza); font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.auth-ou { display: flex; align-items: center; gap: 12px; color: var(--cinza); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 .auth-ou::before, .auth-ou::after { content: ""; flex: 1; height: 1px; background: var(--linha); }
 .auth-email { position: relative; display: flex; }
 .auth-email input { width: 100%; height: 48px; padding: 0 56px 0 16px; border-radius: var(--r-btn-g); font-size: 15px; }
@@ -1766,6 +1767,7 @@ span.tarefa-check { cursor: default; }
   .msg-proposta .msg-corpo { max-width: 100%; }
   .msg-proposta .msg-linha { position: relative; }
   .msg-proposta .msg-acoes { position: absolute; top: -14px; right: 8px; z-index: 1; flex-direction: row; }
+  .msg-minha.msg-proposta .msg-meta { padding-right: 44px; } /* a sua proposta fica à direita: a hora não vai para baixo do botão de ações */
   .msg-proposta:not(:focus-within) .msg-acoes { background: var(--elevado); border: 1px solid var(--linha); border-radius: 999px; }
   .msg-proposta .decidir { width: 100%; }
   .msg-proposta .decidir .btn { flex: 1 1 auto; min-width: 0; }
