@@ -837,7 +837,7 @@ export default function SalaPage() {
                     responder={m.id > 0 && !leitor ? () => responder(m) : undefined}
                     copiar={() => copiarTexto(m.texto)}
                     editar={minhaPessoa && m.tipo === "mensagem" && m.id > 0 ? (t) => editar(m.id, t) : undefined}
-                    apagar={(m.user_id === eu || dono) && m.id > 0 ? () => apagar(m) : undefined}
+                    apagar={(m.user_id === eu || dono) && m.id > 0 && !(m.tipo === "proposta" && (m.estado === "aprovada" || m.estado === "recusada")) ? () => apagar(m) : undefined /* proposta decidida fica no registro */}
                     decidir={m.tipo === "proposta" && m.id > 0 && !leitor ? (a, n) => decidir(m.id, a, n) : undefined}
                     virarTarefa={m.id > 0 && !m.apagada && !leitor ? () => {
                       const t = m.texto.replace(/[*_`#>]/g, "").replace(/@[\p{L}\p{N}_-]+/gu, "").split("\n").map((x) => x.trim()).find(Boolean) ?? "";
@@ -936,6 +936,7 @@ export default function SalaPage() {
             <p className="so-leitura" role="status">{t("Você acompanha esta sala no modo só leitura: vê a conversa, as decisões e as tarefas, mas não escreve. Para participar, peça a quem cuida da sala.", "You're a viewer in this room: you can see the conversation, decisions and tasks, but you can't write. To join in, ask the room owner.")}</p>
           ) : <Compor key={id} ref={compor} subir={(f) => subirArquivo(id, eu, f)} sugestoesBase={sugestoes} respondendo={respondendo} cancelarResposta={() => setRespondendo(null)} enviar={enviar}
             vazia={vazia} criarTarefa={(texto) => { setRascunho({ titulo: texto.slice(0, 120), origem: null, responsavel: valorResp(eu, null) }); setPainel("tarefas"); }}
+            precisa={precisaSala}
             pessoas={membros.filter((x) => x.papel !== "leitor").map((x) => ({ id: x.user_id, nome: x.user_id === eu ? t("Você", "You") : (x.perfis?.nome ?? "").split(" ")[0] }))} />}
           {vazia && (
             <ul className="sala-sugestoes" aria-label={t("Para começar", "To get started")}>

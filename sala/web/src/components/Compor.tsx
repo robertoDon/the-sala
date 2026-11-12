@@ -17,6 +17,7 @@ type Props = {
   enviar: (texto: string, proposta: boolean, anexos: Anexo[], aprovadores?: string[]) => void;
   subir: (f: File) => Promise<Anexo>;
   pessoas?: { id: string; nome: string }[]; // quem pode aprovar uma proposta
+  precisa?: number; // quantas aprovações a sala pede: quem indica quem decide não pode indicar menos gente que isso
   criarTarefa?: (texto: string) => void; // "+ › Criar tarefa": leva o texto escrito para Tarefas
   vazia?: boolean; // sala sem mensagens: a caixa fica no centro e convida a começar
 };
@@ -32,10 +33,11 @@ const dicas = (estreito: boolean) => estreito
     tr("Precisa de um sim? Use Propor", "Need a yes? Use Propose"),
   ];
 
-export const Compor = forwardRef<ComporApi, Props>(function Compor({ sugestoesBase, respondendo, cancelarResposta, enviar, subir, pessoas = [], criarTarefa, vazia }, ref) {
+export const Compor = forwardRef<ComporApi, Props>(function Compor({ sugestoesBase, respondendo, cancelarResposta, enviar, subir, pessoas = [], precisa = 1, criarTarefa, vazia }, ref) {
   const [texto, setTexto] = useState("");
   const [proposta, setProposta] = useState(false);
   const [aprovam, setAprovam] = useState<string[]>([]); // vazio = a regra da sala
+  const faltaGente = proposta && aprovam.length > 0 && aprovam.length < precisa; // o banco recusa: avisa antes
   const [busca, setBusca] = useState<string | null>(null); // texto depois do @ que está sendo digitado
   const [escolha, setEscolha] = useState(0);
   const caixa = useRef<HTMLTextAreaElement>(null);
@@ -140,7 +142,7 @@ export const Compor = forwardRef<ComporApi, Props>(function Compor({ sugestoesBa
 
   const mandar = () => {
     const t = texto.trim();
-    if ((!t && !prontos.length) || enviando) return;
+    if ((!t && !prontos.length) || enviando || faltaGente) return;
     enviar(t, proposta, prontos, proposta ? aprovam : undefined);
     arquivos.forEach((a) => a.previa && URL.revokeObjectURL(a.previa));
     setTexto(""); setBusca(null); setProposta(false); setArquivos([]); setAprovam([]);
@@ -191,7 +193,7 @@ export const Compor = forwardRef<ComporApi, Props>(function Compor({ sugestoesBa
             )}
             {proposta && (
               <span className="compor-chip">
-                <IconeProposta tamanho={14} /> <strong>{tr("Proposta", "Proposal")}</strong> · {aprovam.length ? tr("só decide quem você marcou", "only the people you chose can decide") : tr("as pessoas da sala aprovam ou recusam", "people in the room will approve or decline")}
+                <IconeProposta tamanho={14} /> <strong>{tr("Proposta", "Proposal")}</strong> · {faltaGente ? tr(`esta sala pede ${precisa} aprovações: marque pelo menos ${precisa} pessoas`, `this room needs ${precisa} approvals: pick at least ${precisa} people`) : aprovam.length ? tr("só decide quem você marcou", "only the people you chose can decide") : tr("as pessoas da sala aprovam ou recusam", "people in the room will approve or decline")}
               </span>
             )}
             {proposta && pessoas.length > 1 && (
@@ -258,7 +260,7 @@ export const Compor = forwardRef<ComporApi, Props>(function Compor({ sugestoesBa
           </button>
           <span className="compor-espaco" />
           <span className="compor-atalho some-celular" aria-hidden><kbd>Enter</kbd> {tr("envia", "to send")} · <kbd>Shift</kbd> <kbd>Enter</kbd> {tr("quebra linha", "new line")}</span>
-          <button className="btn-enviar" disabled={(!texto.trim() && !prontos.length) || enviando} title={proposta ? tr("Propor (Enter)", "Propose (Enter)") : tr("Enviar (Enter)", "Send (Enter)")} aria-label={proposta ? tr("Enviar proposta", "Send proposal") : tr("Enviar", "Send")}>
+          <button className="btn-enviar" disabled={(!texto.trim() && !prontos.length) || enviando || faltaGente} title={proposta ? tr("Propor (Enter)", "Propose (Enter)") : tr("Enviar (Enter)", "Send (Enter)")} aria-label={proposta ? tr("Enviar proposta", "Send proposal") : tr("Enviar", "Send")}>
             <IconeEnviar tamanho={18} />
           </button>
         </div>
