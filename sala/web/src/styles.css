@@ -1644,25 +1644,6 @@ span.tarefa-check { cursor: default; }
 .auth-google { width: 100%; justify-content: center; padding: 0 18px; }
 .g-selo { display: grid; place-items: center; width: 26px; height: 26px; flex: none; border-radius: 999px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .18); }
 .g-selo svg { width: 16px; height: 16px; }
-.auth-ou { display: flex; align-items: center; gap: 12px; color: var(--cinza); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-.auth-ou::before, .auth-ou::after { content: ""; flex: 1; height: 1px; background: var(--linha); }
-.auth-email { position: relative; display: flex; }
-.auth-email input { width: 100%; height: 48px; padding: 0 56px 0 16px; border-radius: var(--r-btn-g); font-size: 15px; }
-.auth-enviar {
-  position: absolute; top: 6px; right: 6px; width: 36px; height: 36px; display: grid; place-items: center;
-  border: 0; border-radius: var(--r-btn); cursor: pointer; background: var(--suave); color: var(--cinza);
-  transition: background var(--rapido), color var(--rapido), transform 80ms ease;
-}
-.auth-enviar.pronto { background: var(--acento); color: var(--acento-tinta); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2); }
-.auth-enviar:active:not(:disabled) { transform: scale(.94); }
-.auth-enviar:disabled { cursor: default; }
-.auth-dica { text-align: center; }
-.auth-enviado {
-  display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--r3);
-  background: color-mix(in srgb, var(--ok) 8%, var(--elevado)); border: 1px solid color-mix(in srgb, var(--ok) 30%, var(--linha));
-}
-.auth-enviado div { display: flex; flex-direction: column; gap: 2px; }
-.auth-enviado-icone { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: 999px; background: var(--ok); color: var(--ok-tinta); }
 
 /* ================================================================ movimento */
 

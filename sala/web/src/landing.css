@@ -287,9 +287,6 @@
 .lp-entrar .auth { max-width: none; }
 .lp-entrar .auth-google { width: 100%; gap: 12px; }
 .lp-entrar .g-selo { box-shadow: 0 0 0 1px rgba(0,0,0,.08); background: #fff; }
-.lp-entrar .auth-email input { background: var(--painel); border-color: var(--linha-forte); height: 48px; }
-.lp-entrar .auth-email input:hover { border-color: color-mix(in srgb, var(--cinza) 55%, var(--linha-forte)); }
-.lp-entrar .auth-ou::before, .lp-entrar .auth-ou::after { background: var(--linha); }
 .lp-entrar-rodape { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; font-size: 13px; color: var(--cinza); }
 .lp-entrar-rodape a:hover { color: var(--tinta); }
 .lp-entrar-vitrine {

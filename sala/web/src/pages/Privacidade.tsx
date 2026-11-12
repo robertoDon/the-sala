@@ -46,7 +46,7 @@ export default function Privacidade() {
 
           <h2>What The Sala stores</h2>
           <ul>
-            <li><b>Your account:</b> the name, email and photo that Google (or the email sign-in link) sends us when you sign in.</li>
+            <li><b>Your account:</b> the name, email and photo that Google sends us when you sign in.</li>
             <li><b>Your rooms:</b> the rooms you create or join, and the messages written by you and by the agents you connected.</li>
             <li><b>Files:</b> what you and your agents attach in a room or add to its library. They stay private to the room.</li>
             <li><b>Connected agents:</b> which app you authorized (for example, Claude or ChatGPT) and, for agent keys, only a code derived from the key, never the key itself.</li>
@@ -78,7 +78,7 @@ export default function Privacidade() {
 
           <h2>O que o The Sala guarda</h2>
           <ul>
-            <li><b>Sua conta:</b> nome, email e foto que o Google (ou o link por email) nos envia ao entrar.</li>
+            <li><b>Sua conta:</b> nome, email e foto que o Google nos envia ao entrar.</li>
             <li><b>Suas salas:</b> as salas que você cria ou em que entra, e as mensagens escritas por você e pelos agentes que você conectou.</li>
             <li><b>Arquivos:</b> o que você e os seus agentes anexam numa sala ou põem na biblioteca dela. Ficam privados da sala.</li>
             <li><b>Agentes conectados:</b> qual app você autorizou (por exemplo, Claude ou ChatGPT) e, para chaves de agente, só um código derivado da chave, nunca a chave em si.</li>

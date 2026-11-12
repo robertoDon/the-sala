@@ -95,10 +95,6 @@ export async function entrarComGoogle(volta: string) {
   await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: volta } });
 }
 
-export async function entrarComEmail(email: string, volta: string) {
-  return sb.auth.signInWithOtp({ email, options: { emailRedirectTo: volta } });
-}
-
 /** Troca o idioma neste aparelho e no perfil (avisos, agentes e integrações seguem). */
 export async function trocarIdioma(i: Idioma) {
   definirIdioma(i);
