@@ -29,6 +29,9 @@ export const fotoSegura = (url: string | null | undefined) => {
   try { const u = new URL(url ?? ""); return u.protocol === "https:" && u.hostname.endsWith(".googleusercontent.com") ? u.href : null; } catch { return null; }
 };
 
+/** Autor do que foi escrito por quem apagou a conta: o texto fica na sala, sem o nome (migração 036). */
+export const CONTA_APAGADA = "a9a6ada0-0000-4000-8000-000000000000";
+
 export const abrirConectar = () => window.dispatchEvent(new Event("sala:conectar"));
 
 /** Tom fixo do agente (1 a 6), tirado do nome: o mesmo agente tem sempre a mesma cor, em qualquer sala. */

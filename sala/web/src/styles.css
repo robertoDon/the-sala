@@ -1439,6 +1439,10 @@ span.tarefa-check { cursor: default; }
 .conectar-opcoes button > svg { flex: none; color: var(--cinza-claro); transform: rotate(180deg); transition: transform var(--rapido), color var(--rapido); }
 .conectar-opcoes button:hover > svg { color: var(--tinta); transform: rotate(180deg) translateX(-2px); }
 /* os passos num cartão próprio, separado do resto da janela */
+/* onde o agente entra: uma linha acima dos passos */
+.conectar-escopo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: var(--t1); color: var(--cinza); }
+.conectar-escopo select { width: auto; max-width: 100%; min-height: 32px; font-size: var(--t1); color: var(--tinta); }
+.conectar-escopo .nota { flex-basis: 100%; }
 .conectar-cartao { display: flex; flex-direction: column; gap: 4px; padding: 20px 20px 12px; border-radius: var(--r3); background: var(--fundo); box-shadow: inset 0 0 0 1px var(--linha); }
 
 /* trilha: número, título curto, uma linha de detalhe e o que copiar; um fio liga os números */

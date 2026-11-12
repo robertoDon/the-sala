@@ -9,13 +9,15 @@ import { BotaoConfirmar } from "./Confirmar";
 export type Citacao = { id: number; autor: string; texto: string } | null;
 export type GrupoReacao = { emoji: string; quem: string[]; minha: boolean };
 // indicados: a proposta disse quem decide; posso: eu estou entre quem pode decidir
-export type Aprovacao = { precisa: number; quem: string[]; euAprovei: boolean; faltam: string[]; indicados?: string[] | null; posso?: boolean };
+export type Aprovacao = { precisa: number; quem: string[]; euAprovei: boolean; faltam: string[]; indicados?: string[] | null; posso?: boolean; sua?: boolean /* a proposta é de quem está olhando: outra pessoa aprova */ };
 
 const ou = (xs: string[], palavra = "ou") => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} ${palavra} ${xs[xs.length - 1]}`);
 const lista = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} ${tr("e", "and")} ${xs[xs.length - 1]}`);
 
 // "1 de 2 aprovações · Roberto aprovou · falta David", com um marcador por aprovação
 export function LinhaAprovacao({ a }: { a: Aprovacao }) {
+  // proposta de quem está olhando, numa sala em que uma aprovação basta: só o recado de quem decide
+  if (a.sua && a.precisa < 2 && !a.indicados?.length) return <p className="aprovacoes"><span>{tr("A proposta é sua: quem aprova é outra pessoa da sala.", "This is your proposal: someone else in the room approves it.")}</span></p>;
   return (
     <p className="aprovacoes">
       <span className="aprovacoes-pontos" aria-hidden>{Array.from({ length: a.precisa }, (_, i) => <span key={i} className={i < a.quem.length ? "cheio" : ""} />)}</span>
@@ -28,6 +30,7 @@ export function LinhaAprovacao({ a }: { a: Aprovacao }) {
         {a.faltam.length > 0 && a.quem.length < a.precisa && (a.faltam.length <= a.precisa - a.quem.length
           ? <> · {tr(`falta ${lista(a.faltam)}`, `waiting for ${lista(a.faltam)}`)}</>
           : <> · {tr(`falta mais ${a.precisa - a.quem.length}`, `${a.precisa - a.quem.length} more needed`)}</>)}
+        {a.sua && <> · {tr("a proposta é sua, quem aprova são os outros", "it's your proposal, the others approve")}</>}
       </span>
     </p>
   );

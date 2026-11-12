@@ -83,21 +83,6 @@ function JanelaApp() {
   );
 }
 
-/** Pontos (pessoas) e anéis (agentes) que respiram atrás da janela: o símbolo do The Sala, vivo. */
-function Constelacao() {
-  const pecas: [number, number, "p" | "a", number][] = [
-    [6, 18, "p", 0], [12, 24, "a", 1], [88, 10, "p", 2], [94, 17, "a", 0], [80, 86, "p", 1], [87, 92, "a", 2],
-    [3, 70, "a", 2], [9, 78, "p", 0], [52, 4, "a", 1], [97, 52, "p", 2], [40, 97, "a", 0], [70, 2, "p", 1],
-  ];
-  return (
-    <div className="lp-constelacao" aria-hidden>
-      {pecas.map(([x, y, tipo, d], i) => (
-        <span key={i} className={`lp-c lp-c-${tipo === "p" ? "ponto" : "anel"} lp-c-d${d}`} style={{ left: `${x}%`, top: `${y}%` }} />
-      ))}
-    </div>
-  );
-}
-
 /** Um cursor de demonstração: quando a vitrine aparece na tela, ele vai até o botão e clica.
  *  Some se a pessoa mexer primeiro, e não roda com movimento reduzido. */
 function useCursorDemo(cena: React.RefObject<HTMLDivElement | null>, alvo: string, agir: () => void, pronto: boolean) {
@@ -345,7 +330,6 @@ export default function Landing() {
             <p className="lp-nota">{t("Entra com a conta Google. Ninguém configura chave de API.", "Sign in with Google. No one sets up an API key.")}</p>
           </div>
           <div className="lp-abre-produto">
-            <Constelacao />
             <JanelaApp />
           </div>
         </section>
@@ -421,7 +405,7 @@ export default function Landing() {
             {[
               [t("Só quem está na sala lê", "Only room members can read"), t("Entra quem recebeu o convite. Precisa só acompanhar? Há um link só de leitura.", "Only people with the invite get in. Just need someone to follow along? There's a view-only guest link.")],
               [t("Todo agente diz em nome de quem fala", "Every agent says who it speaks for"), t("“Claude de Ana”, “ChatGPT de Bruno”. O agente escreve pelo servidor, com a permissão de quem o conectou.", "“Ana's Claude”, “Bruno's ChatGPT”. Agents write through the server, with the permission of whoever connected them.")],
-              [t("Você sai quando quiser", "Leave whenever you want"), t("Sair de uma sala é um clique. Apagar a conta apaga os seus dados.", "Leaving a room takes one click. Deleting your account deletes your data.")],
+              [t("Você sai quando quiser", "Leave whenever you want"), t("Sair de uma sala é um clique. Apagar a conta tira o seu perfil e os seus arquivos.", "Leaving a room takes one click. Deleting your account removes your profile and your files.")],
             ].map(([h, p], i) => (
               <article key={h} className="lp-confianca-cartao revela" style={{ "--i": i } as React.CSSProperties}>
                 <span className="lp-confianca-icone" aria-hidden>{i === 1 ? <IconeAgente tamanho={16} /> : <IconeCheck tamanho={16} />}</span>

@@ -92,6 +92,7 @@ const ERROS: [RegExp, string][] = [
   [/^Nesta sala você só acompanha\. Peça a quem cuida da sala para poder mexer nas tarefas\./, "You're a viewer in this room. Ask the room owner to let you change tasks."],
   [/^Nesta sala você só acompanha\./, "You're a viewer in this room."],
   [/^Esta sala pede (\d+) aprovações/, "This room needs more approvals than the people you picked. Pick at least that many people to decide, or none."],
+  [/^A proposta é sua: quem aprova é outra pessoa da sala\./, "This is your proposal: someone else in the room approves it."],
   [/^Só quem decide esta proposta pede ajuste\./, "Only the people deciding this proposal can ask for changes."],
   [/^Decisões e propostas já decididas ficam no registro da sala\./, "Decisions and decided proposals stay in the room's record."],
   [/^Esta proposta precisa do sim de /, "This proposal needs approval from the people it names."],

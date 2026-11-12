@@ -163,6 +163,19 @@ const CORS = {
 };
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
+// A sala foi apagada (o banco avisa, migração 036): os arquivos dela saem do armazenamento.
+// Sem isso ficavam lá para sempre, fora do alcance de qualquer pessoa.
+async function limparSala(sala: string) {
+  if (!/^[0-9a-f-]{36}$/.test(sala)) return new Response("sala inválida", { status: 400 });
+  // só limpa se a sala não existe mais (o pedido vem do gatilho de exclusão; isto segura um pedido repetido ou torto)
+  const { data: existe } = await db.from("salas").select("id").eq("id", sala).maybeSingle();
+  if (existe) return new Response("a sala existe", { status: 409 });
+  const { data } = await db.rpc("arquivos_da_sala", { sala });
+  const paths = ((data ?? []) as unknown[]).map(String).filter((p) => p.startsWith(`${sala}/`));
+  for (let i = 0; i < paths.length; i += 100) await db.storage.from("arquivos").remove(paths.slice(i, i + 100)).then(() => {}, () => {});
+  return new Response(`arquivos ${paths.length}`);
+}
+
 // compara os resumos, byte a byte até o fim: o tempo da resposta não conta quantos caracteres do segredo estavam certos
 async function mesmoSegredo(a: string, b: string) {
   const [x, y] = (await Promise.all([a, b].map((s) => crypto.subtle.digest("SHA-256", txt(s))))).map((h) => new Uint8Array(h));
@@ -180,6 +193,7 @@ Deno.serve(async (req) => {
   if (!segredoAviso || !(await mesmoSegredo(req.headers.get("x-aviso") ?? "", segredoAviso))) return new Response("não", { status: 401 });
 
   const corpo = await req.json().catch(() => ({}));
+  if (corpo.limpar_sala) return await limparSala(String(corpo.limpar_sala));
   if (corpo.tarefa) return await avisarTarefa(Number(corpo.tarefa));
   if (corpo.despertar) return await despertar(Number(corpo.despertar), corpo.so_user ? { user_id: String(corpo.so_user), agente: String(corpo.so_agente ?? "") } : null);
   const { id } = corpo;

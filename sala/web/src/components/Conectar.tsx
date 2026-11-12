@@ -10,7 +10,7 @@ import { recado } from "./Recados";
 import { nomeDoApp } from "../../../supabase/functions/_shared/agentes";
 
 type Aba = "claude" | "chatgpt" | "gemini" | "code" | "outro";
-type Chave = { id: string; agente: string; final: string; criada_em: string; usada_em: string | null };
+type Chave = { id: string; agente: string; final: string; criada_em: string; usada_em: string | null; sala_id?: string | null };
 type Grant = { client: { id: string; name: string }; granted_at: string };
 
 
@@ -24,7 +24,7 @@ const quandoHora = (iso: string) => {
 };
 const quando = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: "2-digit", month: "short" }) : t("nunca", "never"));
 
-export function Conectar({ fechar }: { fechar: () => void }) {
+export function Conectar({ fechar, salas = [] }: { fechar: () => void; salas?: { id: string; nome: string }[] }) {
   const janela = useFocoPreso<HTMLDivElement>();
   const { perfil } = useAuth();
   const [aba, setAba] = useState<Aba | null>(null); // escolhido: mostra só os passos dele
@@ -40,6 +40,10 @@ export function Conectar({ fechar }: { fechar: () => void }) {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [nova, setNova] = useState<{ agente: string; chave: string } | null>(null);
   const [nomeAgente, setNomeAgente] = useState("");
+  // onde o agente entra: em todas as suas salas (o comum) ou numa só. Preso a uma sala, ele não enxerga as outras.
+  const [escopo, setEscopo] = useState("");
+  const url = escopo ? `${MCP_URL}?sala=${escopo}` : MCP_URL;
+  const mudarEscopo = (s: string) => { setEscopo(s); setNova(null); /* a chave gerada valia para a escolha de antes */ };
   const en = idioma() === "en";
 
   // o que já estava conectado ao abrir; o que aparecer depois vira "conectado agora"
@@ -47,8 +51,10 @@ export function Conectar({ fechar }: { fechar: () => void }) {
   const [recem, setRecem] = useState<string | null>(null);
 
   const carregar = async () => {
-    const { data } = await sb.from("chaves").select("id, agente, final, criada_em, usada_em").order("criada_em", { ascending: false });
-    const cs = (data ?? []) as Chave[];
+    let data: Chave[] | null = (await sb.from("chaves").select("id, agente, final, criada_em, usada_em, sala_id").order("criada_em", { ascending: false })).data;
+    // banco de antes da chave por sala (migração 036): lê sem a coluna
+    if (!data) data = (await sb.from("chaves").select("id, agente, final, criada_em, usada_em").order("criada_em", { ascending: false })).data;
+    const cs = data ?? [];
     setChaves(cs);
     if (perfil) sb.from("agentes").select("*").eq("user_id", perfil.id).then(({ data: ps }) => setPresencas((ps as Agente[]) ?? []));
     let gs: Grant[] | null = null;
@@ -76,7 +82,7 @@ export function Conectar({ fechar }: { fechar: () => void }) {
   }, [fechar]);
 
   const criarChave = async (agente: string) => {
-    const { data, error } = await sb.rpc("criar_chave", { agente });
+    const { data, error } = await sb.rpc("criar_chave", escopo ? { agente, sala: escopo } : { agente });
     if (error) return recado(erro(error));
     setNova({ agente, chave: data as string });
     carregar();
@@ -240,7 +246,7 @@ Keep listening to the room in the background and respond to anything meant for y
                   <li key={c.id}>
                     <span className="conexao-icone" aria-hidden><IconeChave tamanho={15} /></span>
                     <span className="linha-texto">
-                      <span className="linha-titulo">{t("Chave", "Key")} <code>…{c.final}</code></span>
+                      <span className="linha-titulo">{t("Chave", "Key")} <code>…{c.final}</code>{c.sala_id && <span className="nota"> · {t("só", "only")} {salas.find((s) => s.id === c.sala_id)?.nome ?? t("uma sala", "one room")}</span>}</span>
                       <span className="presenca">{t("criada em", "created on")} {quandoHora(c.criada_em)} · {c.usada_em ? t(`usada ${quando(c.usada_em)}`, `last used ${quando(c.usada_em)}`) : t("nunca usada", "never used")}{todas.length > 1 && `c:${c.id}` === maisRecente ? t(" · a mais recente", " · most recent") : ""}</span>
                     </span>
                     <button type="button" className={`btn btn-pequeno ${confirmando === `c:${c.id}` ? "btn-perigo-cheio" : "btn-texto btn-perigo"}`} onClick={() => desconectar(`c:${c.id}`)}>
@@ -287,18 +293,29 @@ Keep listening to the room in the background and respond to anything meant for y
           ? t("Quando chamarem o seu Claude numa sala, ele abre sozinho na nuvem, lê a conversa e responde em cerca de 1 minuto, mesmo com o computador desligado. Precisa de Claude Pro, Max, Team ou Enterprise.", "When someone mentions your Claude in a room, it starts up in the cloud, reads the conversation and replies in about a minute, even with your computer off. Needs Claude Pro, Max, Team or Enterprise.")
           : t("Quando chamarem o seu ChatGPT numa sala, ele recebe um aviso, lê a conversa e responde sozinho. Precisa de ChatGPT Plus, Pro, Business, Enterprise ou Edu.", "When someone mentions your ChatGPT in a room, it gets notified, reads the conversation and replies on its own. Needs ChatGPT Plus, Pro, Business, Enterprise or Edu.")}</p>}
 
+        {tela === "passos" && salas.length > 1 && (
+          <label className="conectar-escopo">
+            <span>{t("Este agente entra em", "This agent joins")}</span>
+            <select value={escopo} onChange={(e) => mudarEscopo(e.target.value)}>
+              <option value="">{t("todas as minhas salas", "all my rooms")}</option>
+              {salas.map((s) => <option key={s.id} value={s.id}>{t(`só ${s.nome}`, `only ${s.nome}`)}</option>)}
+            </select>
+            {escopo && <span className="nota">{t("Ele não enxerga as suas outras salas.", "It can't see your other rooms.")}</span>}
+          </label>
+        )}
+
         {tela === "passos" && <div className="conectar-cartao">
           {aba === "claude" && <Trilha passos={[
             { titulo: t("Abra os conectores do Claude", "Open Claude's connectors"), detalhe: t("No site ou no app: Configurações → Conectores.", "On the website or app: Settings → Connectors.") },
-            { titulo: t("Adicione um conector personalizado", "Add a custom connector"), detalhe: <>{t("Nome: ", "Name: ")}<b>The Sala</b>{t(". Cole esta URL:", ". Paste this URL:")}</>, extra: <Copiavel valor={MCP_URL} rotulo={t("URL do conector", "Connector URL")} /> },
+            { titulo: t("Adicione um conector personalizado", "Add a custom connector"), detalhe: <>{t("Nome: ", "Name: ")}<b>The Sala</b>{t(". Cole esta URL:", ". Paste this URL:")}</>, extra: <Copiavel valor={url} rotulo={t("URL do conector", "Connector URL")} /> },
             { titulo: t("Clique em Conectar e depois em Permitir", "Click Connect, then Allow"), detalhe: t("Entre com a mesma conta que você usa no The Sala.", "Sign in with the same account you use on The Sala.") },
-            { titulo: t("Peça numa conversa: “lê a sala e responde”", "In a chat, ask: “read the room and reply”"), detalhe: t("Pronto: ele já entra em todas as suas salas.", "Done: it now has access to all your rooms.") },
+            { titulo: t("Peça numa conversa: “lê a sala e responde”", "In a chat, ask: “read the room and reply”"), detalhe: escopo ? t("Pronto: ele entra só na sala que você escolheu.", "Done: it only has access to the room you picked.") : t("Pronto: ele já entra em todas as suas salas.", "Done: it now has access to all your rooms.") },
           ]} />}
 
           {aba === "chatgpt" && <>
             <Trilha passos={[
               { titulo: t("Ligue o Modo desenvolvedor", "Turn on Developer mode"), detalhe: t("No ChatGPT: Configurações → Plugins → Configurações avançadas.", "In ChatGPT: Settings → Plugins → Advanced settings.") },
-              { titulo: t("Crie o conector The Sala", "Create The Sala connector"), detalhe: <>{t("Em Plugins → ", "In Plugins → ")}<b>{t("Criar", "Create")}</b>{t(". Autenticação: OAuth. URL:", ". Authentication: OAuth. URL:")}</>, extra: <Copiavel valor={MCP_URL} rotulo={t("URL do conector", "Connector URL")} /> },
+              { titulo: t("Crie o conector The Sala", "Create The Sala connector"), detalhe: <>{t("Em Plugins → ", "In Plugins → ")}<b>{t("Criar", "Create")}</b>{t(". Autenticação: OAuth. URL:", ". Authentication: OAuth. URL:")}</>, extra: <Copiavel valor={url} rotulo={t("URL do conector", "Connector URL")} /> },
               { titulo: t("Clique em Permitir", "Click Allow"), detalhe: t("Entre com a mesma conta que você usa no The Sala.", "Sign in with the same account you use on The Sala.") },
               { titulo: t("Ative o conector numa conversa", "Turn the connector on in a chat"), detalhe: t("E peça: “lê a sala e responde”.", "And ask: “read the room and reply”.") },
             ]} />
@@ -311,7 +328,7 @@ Keep listening to the room in the background and respond to anything meant for y
 
           {aba === "gemini" && <>
             <Trilha passos={[
-              { titulo: t("Adicione o The Sala ao Gemini CLI", "Add The Sala to Gemini CLI"), detalhe: t("Rode no terminal:", "Run in your terminal:"), extra: <Copiavel valor={`gemini mcp add --transport http sala ${MCP_URL}`} rotulo={t("Comando do Gemini CLI", "Gemini CLI command")} /> },
+              { titulo: t("Adicione o The Sala ao Gemini CLI", "Add The Sala to Gemini CLI"), detalhe: t("Rode no terminal:", "Run in your terminal:"), extra: <Copiavel valor={`gemini mcp add --transport http sala '${url}'`} rotulo={t("Comando do Gemini CLI", "Gemini CLI command")} /> },
               { titulo: t("Entre com a sua conta", "Sign in"), detalhe: <>{t("Abra o ", "Open ")}<code>gemini</code>{t(", digite ", ", type ")}<code>/mcp auth sala</code>{t(" e clique em Permitir.", " and click Allow.")}</> },
               { titulo: t("Peça: “lê a sala e responde”", "Ask: “read the room and reply”"), detalhe: t("Para ele ficar ouvindo sozinho, volte e escolha Outro.", "To keep it listening on its own, go back and choose Other.") },
             ]} />
@@ -327,7 +344,7 @@ Keep listening to the room in the background and respond to anything meant for y
             <details className="conectar-ajuda">
               <summary>{t("Só as ferramentas, sem ficar ouvindo", "Tools only, without listening")}</summary>
               <p>{t("Rode no terminal e depois /mcp no Claude Code para entrar:", "Run this in the terminal, then /mcp in Claude Code to sign in:")}</p>
-              <Copiavel valor={`claude mcp add --transport http sala ${MCP_URL}`} rotulo={t("Comando", "Command")} />
+              <Copiavel valor={`claude mcp add --transport http sala '${url}'`} rotulo={t("Comando", "Command")} />
             </details>
           </>}
 
@@ -346,7 +363,7 @@ Keep listening to the room in the background and respond to anything meant for y
             <details className="conectar-ajuda">
               <summary>{t("O agente aceita conector MCP?", "Does the agent support MCP connectors?")}</summary>
               <p>{t("Então use esta URL com login, sem chave:", "Then use this URL and sign in, no key needed:")}</p>
-              <Copiavel valor={MCP_URL} rotulo={t("URL do servidor MCP", "MCP server URL")} />
+              <Copiavel valor={url} rotulo={t("URL do servidor MCP", "MCP server URL")} />
             </details>
           </>}
         </div>}

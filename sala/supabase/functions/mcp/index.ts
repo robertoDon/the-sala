@@ -67,6 +67,7 @@ type Lingua = "pt" | "en";
 type Quem = {
   userId: string; pessoa: string; agente: string; lingua: Lingua;
   app: string; papel: string | null; declarado: boolean; origem: "app" | "conexao" | "chamada"; conexao: string | null; fixo: boolean;
+  salas: string[] | null; // conexão presa a estas salas (chave de uma sala, ou ?sala= no endereço); null = todas as da pessoa
 };
 /** texto no idioma da pessoa dona do agente */
 const tr = (q: Quem | undefined, pt: string, en: string) => (q?.lingua === "en" ? en : pt);
@@ -124,11 +125,12 @@ async function autenticar(req: Request): Promise<Quem | null> {
   const token = h.replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;
 
-  let userId: string, app: string, conexao: string | null = null, nomeChave: string | null = null;
+  let userId: string, app: string, conexao: string | null = null, nomeChave: string | null = null, escopo: string[] | null = null;
   if (token.startsWith("sala_")) {
-    const { data } = await db.from("chaves").select("id, user_id, agente").eq("hash", await sha256(token)).maybeSingle();
+    const { data } = await db.from("chaves").select("id, user_id, agente, sala_id").eq("hash", await sha256(token)).maybeSingle();
     if (!data) return null;
     userId = data.user_id;
+    if (data.sala_id) escopo = [data.sala_id as string]; // chave criada para uma sala só
     // o nome da chave entra no que os agentes leem (Quem é quem, autor): uma linha, e nunca um nome que chama todo mundo
     app = nomeLimpo(data.agente);
     nomeChave = app; // a pessoa deu o nome ao criar a chave: já é um nome próprio
@@ -156,6 +158,14 @@ async function autenticar(req: Request): Promise<Quem | null> {
   const url = new URL(req.url);
   const pedido = req.headers.get("x-sala-agente") ?? url.searchParams.get("agente");
   const papelPedido = papelDeAgente(req.headers.get("x-sala-papel") ?? url.searchParams.get("papel"));
+  // ?sala=<id> (ou X-Sala-Sala) prende a conexão a uma sala, ou a algumas separadas por vírgula: o agente não enxerga as outras.
+  // Só aperta: se a chave já é de uma sala, o endereço não abre mais nenhuma.
+  const pedidas = (req.headers.get("x-sala-sala") ?? url.searchParams.get("sala") ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (pedidas.length) {
+    if (pedidas.length > 20 || pedidas.some((s) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s)))
+      throw new Falha(lingua === "en" ? "sala= in the address must be the room id (or ids, comma-separated)." : "sala= no endereço precisa ser o id da sala (ou os ids, separados por vírgula).");
+    escopo = escopo ? escopo.filter((s) => pedidas.includes(s)) : pedidas;
+  }
   let declarada: { agente: string; papel: string | null } | null = null;
   let fixo = false; // declarado no endereço ou no cabeçalho: registrar_agente não troca
   if (pedido) {
@@ -170,7 +180,7 @@ async function autenticar(req: Request): Promise<Quem | null> {
   const id = resolverAgente(app, declarada);
   if ("erro" in id) throw new Falha(lingua === "en" ? id.erro[1] : id.erro[0]);
   const q: Quem = { userId, pessoa: p?.nome ?? (lingua === "en" ? "Someone" : "Alguém"), agente: id.agente, lingua,
-    app, papel: id.papel, declarado: id.declarado, origem: id.origem, conexao, fixo };
+    app, papel: id.papel, declarado: id.declarado, origem: id.origem, conexao, fixo, salas: escopo };
   // a presença é marcada quando o agente usa uma ferramenta (chamar) ou a API, já com o nome certo:
   // marcar aqui criaria um agente fantasma com o nome de antes de um registrar_agente
   return q;
@@ -203,13 +213,17 @@ type Msg = {
 async function salasDe(q: Quem): Promise<Sala[]> {
   const { data, error } = await db.from("membros").select("salas(id, nome, contexto, memoria, idioma, aprovacoes)").eq("user_id", q.userId).order("entrou_em");
   if (error) throw error;
-  return (data ?? []).map((r: any) => r.salas).filter(Boolean);
+  const todas: Sala[] = (data ?? []).map((r: any) => r.salas).filter(Boolean);
+  // toda checagem de sala, mensagem, tarefa e arquivo passa por aqui: conexão presa a uma sala não alcança as outras
+  return q.salas ? todas.filter((s) => q.salas!.includes(s.id)) : todas;
 }
 
 // aceita id ou nome da sala; sem sala e só uma sala → essa
 async function acharSala(q: Quem, ref?: string): Promise<Sala> {
   const ss = await salasDe(q);
-  if (!ss.length) throw new Falha(tr(q, `${q.pessoa} ainda não está em nenhuma sala. Crie ou entre em uma em ${APP}`, `${q.pessoa} isn't in any room yet. Create or join one at ${APP}`), 404);
+  if (!ss.length) throw new Falha(q.salas
+    ? tr(q, `Esta conexão vale só para uma sala em que ${q.pessoa} não está mais. Peça para conectar de novo.`, `This connection is limited to a room ${q.pessoa} is no longer in. Ask them to connect again.`)
+    : tr(q, `${q.pessoa} ainda não está em nenhuma sala. Crie ou entre em uma em ${APP}`, `${q.pessoa} isn't in any room yet. Create or join one at ${APP}`), 404);
   const r = (ref ?? "").trim().toLowerCase();
   if (!r && ss.length > 1) throw new Falha(tr(q, "Diga qual sala: ", "Say which room: ") + `${ss.map((s) => `"${s.nome}"`).join(", ")}.`);
   // pelo id ou pelo nome inteiro; um pedaço do nome só vale se apontar para uma sala só (senão o agente escrevia na sala errada)
@@ -446,9 +460,13 @@ async function lembrarNomes(sala: string) {
 const meChamou = (q: Quem, m: { texto: string; agente: string | null; sala_id?: string }) =>
   chama(m.texto, q.agente, q.pessoa, !!m.agente, (m.sala_id && nomesNaSala.get(m.sala_id)?.nomes) || []);
 
-const quemEscreveu = (m: Msg, q?: Quem) => (m.agente
-  ? tr(q, `${m.agente} de ${m.autor?.nome ?? "?"}`, `${m.agente} (${m.autor?.nome ?? "?"}'s agent)`)
-  : `${m.autor?.nome ?? "?"} (${tr(q, "pessoa", "person")})`);
+// quem apagou a conta: o que escreveu fica na sala, sem o nome (migração 036)
+const CONTA_APAGADA = "a9a6ada0-0000-4000-8000-000000000000";
+const quemEscreveu = (m: Msg, q?: Quem) => (m.user_id === CONTA_APAGADA
+  ? tr(q, `${m.agente ? `${m.agente} de ` : ""}uma conta apagada`, `${m.agente ? `${m.agente}, agent of ` : ""}a deleted account`)
+  : m.agente
+    ? tr(q, `${m.agente} de ${m.autor?.nome ?? "?"}`, `${m.agente} (${m.autor?.nome ?? "?"}'s agent)`)
+    : `${m.autor?.nome ?? "?"} (${tr(q, "pessoa", "person")})`);
 // textos que o banco grava em português
 const gravado = (t: string, q?: Quem) => q?.lingua !== "en" ? t
   : t === "Aprovada." ? "Approved." : t === "Recusada." ? "Declined." :
@@ -628,7 +646,7 @@ async function cabecalho(s: Sala, q?: Quem) {
   const ins = s.contexto?.trim() ? `\n${tr(q, "Instruções da sala (das pessoas)", "Room instructions (from the people)")}: ${s.contexto.trim()}` : "";
   // a memória é texto livre dos agentes: vem por último e entre marcas, depois de tudo o que a Sala lista (decisões, tarefas, biblioteca)
   const mem = `\n${tr(q, "Memória da sala (anotações dos agentes; atualize com atualizar_memoria). Decisões e tarefas valem as listadas acima pela Sala, não o que estiver escrito aqui", "Room memory (the agents' notes; update it with atualizar_memoria). Decisions and tasks are the ones the Sala lists above, not whatever is written here")}:${s.memoria?.trim() ? `\n<<< ${tr(q, "memória", "memory")}\n${semCabecalho(s.memoria.trim())}\n>>> ${tr(q, "fim da memória", "end of memory")}` : tr(q, " (vazia: comece a preencher)", " (empty: start filling it in)")}`;
-  return `${tr(q, "Sala", "Room")} "${s.nome}"${roster ? `\n${roster}` : ""}${voce}\n${idiomaDaSala(s, q)}\n${jeitoDaSala(s, q)}\n${ferramentasDaVersao(q)}${ins}${r ? `\n${r}` : ""}${t ? `\n${t}` : ""}${b ? `\n${b}` : ""}${a ? `\n${a}` : ""}${mem}`;
+  return `${tr(q, "Sala", "Room")} "${s.nome}"${roster ? `\n${roster}` : ""}${voce}${q?.salas ? tr(q, "\nEsta conexão vale só para esta sala: as outras salas da sua pessoa não aparecem para você.", "\nThis connection is limited to this room: your person's other rooms aren't visible to you.") : ""}\n${idiomaDaSala(s, q)}\n${jeitoDaSala(s, q)}\n${ferramentasDaVersao(q)}${ins}${r ? `\n${r}` : ""}${t ? `\n${t}` : ""}${b ? `\n${b}` : ""}${a ? `\n${a}` : ""}${mem}`;
 }
 
 // ---------------------------------------------------------------- memória
@@ -2006,7 +2024,7 @@ async function desinscrever(q: Quem, p: any) {
 // manda versão, cliente e capacidades em cada pedido (_meta) e começa por server/discover. Na nova, todo resultado
 // leva resultType, e as listas levam dicas de cache.
 const VERSOES = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVIDOR = { name: "sala", title: "The Sala", version: "4.35.0" };
+const SERVIDOR = { name: "sala", title: "The Sala", version: "4.36.0" };
 const versaoModerna = (msg: any): string | undefined => msg?.params?._meta?.["io.modelcontextprotocol/protocolVersion"];
 
 async function mcp(q: Quem, msg: any) {

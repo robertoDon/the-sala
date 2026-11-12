@@ -23,7 +23,7 @@ import {
   IconeAbrir, IconeAjustes, IconeAgente, IconeBusca, IconeCheck, IconeClipe, IconeCopiar, IconeTarefa, IconeColunas, IconeConvite, IconeDecisao, IconePlugue, IconeProposta, IconeVoltar, Marcador, IconeBiblioteca, IconePainel, IconeMais3, SimboloVivo,
 } from "../components/Icones";
 import {
-  abrirConectar, atrasada, copiarTexto, pedidoPara, presenca, sb, subirArquivo, tomDoAgente, ultimaSala,
+  CONTA_APAGADA, abrirConectar, atrasada, copiarTexto, pedidoPara, presenca, sb, subirArquivo, tomDoAgente, ultimaSala,
   type Agente, type Anexo, type Membro, type Mensagem, type Reacao, type Tarefa,
 } from "../supabase";
 import { recado } from "../components/Recados";
@@ -117,7 +117,7 @@ export default function SalaPage() {
   if (sala && marco.current?.sala !== id) marco.current = { sala: id, ate: Number(sala.lido_ate ?? 0) };
 
   const nomes = useMemo(() => new Map(membros.map((m) => [m.user_id, m.perfis?.nome ?? t("Alguém", "Someone")])), [membros]);
-  const nome = useCallback((uid: string | null) => (uid && nomes.get(uid)) || t("Alguém", "Someone"), [nomes]);
+  const nome = useCallback((uid: string | null) => (uid && nomes.get(uid)) || (uid === CONTA_APAGADA ? t("Conta apagada", "Deleted account") : t("Alguém", "Someone")), [nomes]);
   const primeiro = useCallback((uid: string) => nome(uid).split(" ")[0], [nome]);
   const autor = useCallback((m: Mensagem) => (m.agente ? deQuem(m.agente, primeiro(m.user_id)) : nome(m.user_id)), [nome, primeiro]);
 
@@ -480,11 +480,15 @@ export default function SalaPage() {
     const escrevem = membros.filter((x) => x.papel !== "leitor").map((x) => x.user_id);
     const indicados = m.aprovadores?.length ? m.aprovadores : null; // a proposta disse quem decide
     const precisa = indicados ? Math.min(indicados.length, precisaSala) : precisaSala; // indicados dizem quem; a sala diz quantos (vale também para trocar as instruções)
-    if (precisa < 2 && !indicados) return null;
+    // quem escreveu a proposta (a pessoa, não o agente dela) não aprova a própria quando os outros bastam para decidir
+    const outros = (indicados ?? escrevem).filter((u) => u !== m.user_id);
+    const autorFora = !m.agente && outros.length >= precisa;
+    const sua = autorFora && m.user_id === eu;
+    if (precisa < 2 && !indicados && !sua) return null;
     const curto = (u: string) => (u === eu ? t("você", "you") : nome(u).split(" ")[0]);
     const quem = votos.filter((v) => v.proposta_id === m.id).map((v) => v.user_id);
-    const faltam = (indicados ?? escrevem).filter((u) => !quem.includes(u)).map(curto);
-    return { precisa, quem: quem.map(curto), euAprovei: quem.includes(eu), faltam, indicados: indicados?.map(curto) ?? null, posso: !indicados || indicados.includes(eu) };
+    const faltam = (autorFora ? outros : indicados ?? escrevem).filter((u) => !quem.includes(u)).map(curto);
+    return { precisa, quem: quem.map(curto), euAprovei: quem.includes(eu), faltam, indicados: indicados?.map(curto) ?? null, posso: (!indicados || indicados.includes(eu)) && !sua, sua };
   };
 
   const passos = [

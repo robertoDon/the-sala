@@ -226,7 +226,7 @@ export function Layout({ children, salas, recarregar, foco, fila = [] }: {
 
       <div className="conteudo">{children}</div>
 
-      {conectar && <Conectar fechar={() => setConectar(false)} />}
+      {conectar && <Conectar fechar={() => setConectar(false)} salas={salas ?? []} />}
       {conta && <Conta fechar={() => setConta(false)} />}
       <Guia pronto={salas !== null} emSala={!!id} />
       <Comandos salas={salas} salaAberta={id} novaSala={() => setCriando(true)} conectar={() => setConectar(true)} conta={() => setConta(true)} />

@@ -27,7 +27,7 @@ function Promessas() {
           <span className="perigo"><IconeLixo tamanho={15} /> {t("Apagar a conta", "Delete account")}</span>
         </div>
         <h2>{t("Não usamos a conversa para treinar modelos", "We don't train models on your chats")}</h2>
-        <p>{t("Não vendemos dados nem mostramos anúncios. Você sai quando quiser, e apagar a conta apaga os seus dados.", "We don't sell data or show ads. Leave whenever you want; deleting your account deletes your data.")}</p>
+        <p>{t("Não vendemos dados nem mostramos anúncios. Você sai quando quiser, e apagar a conta tira o seu perfil e os seus arquivos.", "We don't sell data or show ads. Leave whenever you want; deleting your account removes your profile and your files.")}</p>
       </article>
     </section>
   );
@@ -65,7 +65,7 @@ export default function Privacidade() {
           <p>Data is stored on Supabase (database, files and sign-in, São Paulo region), and the website is hosted on Vercel. The fonts are served by Google Fonts, which sees your browser's address when the page loads.</p>
 
           <h2>Your rights</h2>
-          <p>You can leave a room, delete the rooms you created, disconnect agents and delete your account yourself, under your name → Delete account: that removes your messages, the files you uploaded and your agents' keys. For anything else, write to the email below. We respond within 15 days, as required by Brazil's data protection law (LGPD).</p>
+          <p>You can leave a room, delete the rooms you created, disconnect agents and delete your account yourself, under your name → Delete account: that removes your profile, the files you uploaded and your agents' keys. What you wrote in rooms other people are still in stays there without your name (“Deleted account”), so their record of decisions isn't broken; rooms only you were in are deleted. For anything else, write to the email below. We respond within 15 days, as required by Brazil's data protection law (LGPD).</p>
 
           <h2>Contact</h2>
           <p>robertobeckerbt@gmail.com</p>
@@ -97,7 +97,7 @@ export default function Privacidade() {
           <p>Os dados ficam no Supabase (banco, arquivos e login, região São Paulo) e o site, na Vercel. As fontes vêm do Google Fonts, que vê o endereço do seu navegador quando a página carrega.</p>
 
           <h2>Seus direitos</h2>
-          <p>Você pode sair de uma sala, apagar as salas que criou, desconectar agentes e apagar a sua conta por conta própria, no seu nome → Apagar a conta: isso tira as suas mensagens, os arquivos que você enviou e as chaves dos seus agentes. Para qualquer outra coisa, escreva para o email abaixo. Atendemos em até 15 dias, conforme a LGPD.</p>
+          <p>Você pode sair de uma sala, apagar as salas que criou, desconectar agentes e apagar a sua conta por conta própria, no seu nome → Apagar a conta: isso tira o seu perfil, os arquivos que você enviou e as chaves dos seus agentes. O que você escreveu em salas onde outras pessoas continuam fica lá sem o seu nome (“Conta apagada”), para o registro de decisões delas não ficar furado; salas em que só você estava são apagadas. Para qualquer outra coisa, escreva para o email abaixo. Atendemos em até 15 dias, conforme a LGPD.</p>
 
           <h2>Contato</h2>
           <p>robertobeckerbt@gmail.com</p>

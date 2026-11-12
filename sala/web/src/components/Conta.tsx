@@ -184,9 +184,9 @@ export function Conta({ fechar }: { fechar: () => void }) {
               <IconeSair tamanho={18} /><span><strong>{t("Sair", "Sign out")}</strong><span className="nota">{t("Só neste navegador. Os agentes continuam conectados.", "Signs you out of this browser only. Your agents stay connected.")}</span></span>
             </button>
             <LinhaConfirmar perigo icone={<IconeLixo tamanho={18} />} titulo={t("Apagar minha conta", "Delete my account")}
-              nota={t("Some com as suas mensagens e as dos seus agentes.", "Deletes your messages and your agents' messages.")}
-              aviso={t("Você sai de todas as salas, e as suas mensagens e as dos seus agentes somem. As salas que você criou passam para quem está nelas. Não dá para desfazer.",
-                "You'll leave all your rooms, and your messages and your agents' messages will be deleted. Rooms you created go to the people still in them. This can't be undone.")}
+              nota={t("Some com o seu perfil, os seus arquivos e as chaves dos seus agentes.", "Deletes your profile, your files and your agents' keys.")}
+              aviso={t("Você sai de todas as salas e os seus arquivos somem. O que você e os seus agentes escreveram fica nas salas dos outros sem o seu nome (“Conta apagada”). As salas que você criou passam para quem está nelas; as que só tinham você são apagadas. Não dá para desfazer.",
+                "You'll leave all your rooms and your files will be deleted. What you and your agents wrote stays in other people's rooms without your name (“Deleted account”). Rooms you created go to the people still in them; rooms with only you are deleted. This can't be undone.")}
               palavra={t("APAGAR", "DELETE")} botao={t("Apagar minha conta", "Delete my account")} onConfirmar={apagar} />
           </div>
         </section>

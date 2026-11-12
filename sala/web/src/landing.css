@@ -86,13 +86,6 @@
 .lp-janela-conteudo { min-width: 0; border-radius: 14px; overflow: hidden; background: var(--fundo); box-shadow: 0 0 0 1px var(--linha), var(--sombra); }
 .lp-janela .aovivo { height: 100%; border: 0; border-radius: 0; box-shadow: none; }
 
-/* atrás da janela: pontos (pessoas) e anéis (agentes) que respiram, cada um no seu tempo */
-.lp-constelacao { position: absolute; inset: -40px -32px; pointer-events: none; }
-.lp-c { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 999px; animation: lp-respira 4.6s ease-in-out infinite alternate; }
-.lp-c-ponto { background: var(--linha-forte); }
-.lp-c-anel { width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid var(--linha-forte); }
-.lp-c-d1 { animation-duration: 3.6s; animation-delay: -1.2s; }
-.lp-c-d2 { animation-duration: 5.2s; animation-delay: -2.4s; }
 @keyframes lp-respira { from { transform: translateY(0) scale(1); opacity: .65; } to { transform: translateY(-5px) scale(1.12); opacity: 1; } }
 
 /* a conversa ao vivo (componentes reais do app) */
@@ -265,7 +258,7 @@
   .lp-sub { font-size: 16px; }
   .lp-ctas, .lp-ctas .lp-btn, .lp-fecha .lp-btn { width: 100%; }
   .lp-janela { grid-template-columns: 1fr; height: 500px; padding: 4px; border-radius: 18px; }
-  .lp-janela-lateral, .lp-constelacao { display: none; }
+  .lp-janela-lateral { display: none; }
   .lp-agentes { padding-bottom: 48px; }
   .lp-bloco { padding-top: 40px; padding-bottom: 40px; gap: 28px; }
   .lp-agentes li { height: 34px; font-size: 13.5px; }
