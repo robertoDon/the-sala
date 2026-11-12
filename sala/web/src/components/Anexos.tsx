@@ -10,11 +10,20 @@ export function Anexos({ anexos }: { anexos: Anexo[] }) {
   const [ver, setVer] = useState<Record<string, string>>({});
   const [baixar, setBaixar] = useState<Record<string, string>>({});
 
+  // os links valem 1 h: renova de tempos em tempos e ao voltar para a aba, para "Baixar" não cair num link vencido
   useEffect(() => {
     if (!anexos.length) return;
+    let vivo = true;
     const paths = anexos.map((a) => a.path);
-    linksDe(paths.filter((_, i) => ehImagem(anexos[i]))).then(setVer);
-    linksDe(paths, true).then(setBaixar);
+    const pedir = () => {
+      linksDe(paths.filter((_, i) => ehImagem(anexos[i]))).then((v) => vivo && setVer(v));
+      linksDe(paths, true).then((b) => vivo && setBaixar(b));
+    };
+    pedir();
+    const cada = window.setInterval(pedir, 10 * 60_000);
+    const aoVoltar = () => { if (!document.hidden) pedir(); };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => { vivo = false; window.clearInterval(cada); document.removeEventListener("visibilitychange", aoVoltar); };
   }, [anexos]);
 
   if (!anexos.length) return null;

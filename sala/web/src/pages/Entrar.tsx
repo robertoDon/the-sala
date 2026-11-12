@@ -11,7 +11,9 @@ import "../landing.css";
 export default function Entrar() {
   const { sessao } = useAuth();
   const [params] = useSearchParams();
-  const volta = params.get("volta") || "/";
+  // só caminho do próprio app ("/s/..."): nada de "//outro.site" nem "@outro.site"
+  const v = params.get("volta") ?? "";
+  const volta = /^\/(?![/\\])/.test(v) ? v : "/";
   const convite = volta.startsWith("/c/");
   const [email, setEmail] = useState("");
   const [estado, setEstado] = useState<"" | "enviando" | "enviado" | string>("");

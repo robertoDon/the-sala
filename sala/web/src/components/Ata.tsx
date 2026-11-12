@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useFocoPreso } from "./foco";
 import { sb, type Mensagem, type Tarefa } from "../supabase";
 import { IconeFechar } from "./Icones";
 import { gravado, idioma, locale, t } from "../i18n";
@@ -15,6 +16,7 @@ type Dados = { propostas: Mensagem[]; notas: Map<number, string>; tarefas: Taref
 
 // Ata da sala: decisões e tarefas de um período (e a conversa, se quiser), em .md ou para imprimir/PDF.
 export function Ata({ salaId, salaNome, autor, nome, fechar }: Props) {
+  const janela = useFocoPreso<HTMLDivElement>();
   const [dias, setDias] = useState<7 | 30 | 0>(7);
   const [incluirConversa, setConversa] = useState(false);
   const [indo, setIndo] = useState(false);
@@ -135,7 +137,7 @@ p{margin:0 0 8px}.item{padding-left:4px}.sub{padding-left:24px;color:#5F5F66}@me
 
   return (
     <div className="modal-fundo" onMouseDown={(e) => e.target === e.currentTarget && fechar()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="ata-titulo">
+      <div className="modal" ref={janela} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="ata-titulo">
         <div className="modal-topo">
           <h2 id="ata-titulo">{t("Ata da sala", "Room minutes")}</h2>
           <button className="btn-icone" onClick={fechar} aria-label={t("Fechar", "Close")}><IconeFechar /></button>

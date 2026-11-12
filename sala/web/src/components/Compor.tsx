@@ -151,7 +151,7 @@ export const Compor = forwardRef<ComporApi, Props>(function Compor({ sugestoesBa
       {sugestoes.length > 0 && (
         <ul className="sugestoes" role="listbox" aria-label={tr("Mencionar", "Mention")}>
           {sugestoes.map((s, i) => (
-            <li key={s.handle} role="option" aria-selected={i === escolha}>
+            <li key={`${s.handle}-${i}`} role="option" aria-selected={i === escolha}>
               <button type="button" className={i === escolha ? "ativa" : ""} onMouseDown={(e) => { e.preventDefault(); escolher(s); }}>
                 {s.agente ? <span className={`sug-anel ${s.tom ?? ""}`}><IconeAgente tamanho={16} /></span> : <span className="avatar avatar-mini">{s.handle[0]?.toUpperCase()}</span>}
                 <span className="sug-handle">@{s.handle}</span>

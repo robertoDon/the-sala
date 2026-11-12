@@ -37,6 +37,7 @@ export function Busca({ salaId, autor, irPara, fechar }: Props) {
   const [buscando, setBuscando] = useState(false);
   const [ativo, setAtivo] = useState(0);
   const espera = useRef<number | undefined>(undefined);
+  const ordem = useRef(0);
   const campo = useRef<HTMLInputElement>(null);
   const lista = useRef<HTMLUListElement>(null);
 
@@ -45,12 +46,14 @@ export function Busca({ salaId, autor, irPara, fechar }: Props) {
     const t = termo.trim();
     if (t.length < 2) { setRes(null); setBuscando(false); return; }
     setBuscando(true);
+    const pedido = ++ordem.current; // resposta atrasada de uma busca antiga não passa por cima da nova
     espera.current = window.setTimeout(async () => {
       let q = sb.from("mensagens").select("*").eq("sala_id", salaId).eq("apagada", false).ilike("texto", `%${escapar(t)}%`);
       if (filtro === "pessoas") q = q.is("agente", null);
       if (filtro === "agentes") q = q.not("agente", "is", null);
       if (filtro === "propostas") q = q.eq("tipo", "proposta");
       const { data } = await q.order("id", { ascending: false }).limit(50);
+      if (pedido !== ordem.current) return;
       setRes((data as Mensagem[]) ?? []); setAtivo(0); setBuscando(false);
     }, 200);
   }, [termo, filtro, salaId]);

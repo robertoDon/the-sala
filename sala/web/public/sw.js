@@ -87,10 +87,11 @@ self.addEventListener("push", (e) => {
     if (d.fila) await guardarFila(d.fila, true);
     // se a sala já está aberta e na frente, não precisa avisar
     const janelas = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    if (janelas.some((c) => c.visibilityState === "visible" && c.focused && d.url && new URL(c.url).pathname === d.url)) return;
+    const caminho = d.url ? new URL(local(d.url), self.location.origin).pathname : ""; // d.url pode trazer ?ir=, ?tarefas=1
+    if (janelas.some((c) => c.visibilityState === "visible" && c.focused && caminho && new URL(c.url).pathname === caminho)) return;
     const acoes = Array.isArray(d.acoes) ? d.acoes.slice(0, 2) : [];
     await self.registration.showNotification(d.titulo || "The Sala", {
-      body: d.corpo || "", tag: d.tag, renotify: true, icon: "/icone-192.png", badge: "/icone-badge.png", timestamp: Date.now(),
+      body: d.corpo || "", tag: d.tag, renotify: !!d.tag, icon: "/icone-192.png", badge: "/icone-badge.png", timestamp: Date.now(),
       actions: acoes.map((a) => ({ action: a.acao, title: a.titulo })),
       data: { url: d.url || "/", acoes: Object.fromEntries(acoes.map((a) => [a.acao, a.url])) },
     });

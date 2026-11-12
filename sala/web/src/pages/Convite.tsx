@@ -20,7 +20,15 @@ export default function Convite() {
 
   useEffect(() => {
     if (!sessao) return;
-    sb.rpc("ver_convite", { codigo }).then(({ data }) => setInfo((data as Info[])?.[0] ?? null));
+    let vivo = true, espera = 0;
+    // erro de rede não é "convite não vale mais": avisa e tenta de novo
+    const ver = () => sb.rpc("ver_convite", { codigo }).then(({ data, error }) => {
+      if (!vivo) return;
+      if (error) { recado(erro(error)); espera = window.setTimeout(ver, 4000); return; }
+      setInfo((data as Info[])?.[0] ?? null);
+    });
+    ver();
+    return () => { vivo = false; window.clearTimeout(espera); };
   }, [codigo, sessao]);
 
   if (!sessao) return <Navigate to={`/entrar?volta=${encodeURIComponent(`/c/${codigo}`)}`} replace />;

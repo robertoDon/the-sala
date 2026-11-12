@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useFocoPreso } from "./foco";
 import type { Mensagem } from "../supabase";
 import { IconeAgente, IconeFechar, IconeVoltar } from "./Icones";
 import { Texto } from "./Texto";
@@ -32,6 +33,7 @@ type Props = {
 
 // A mesma pergunta, as respostas de cada agente lado a lado.
 export function Comparar({ pergunta, autorPergunta, respostas, autor, esperando, fechar }: Props) {
+  const janela = useFocoPreso<HTMLDivElement>();
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && fechar();
     window.addEventListener("keydown", esc);
@@ -40,7 +42,7 @@ export function Comparar({ pergunta, autorPergunta, respostas, autor, esperando,
 
   return (
     <div className="modal-fundo" onMouseDown={(e) => e.target === e.currentTarget && fechar()}>
-      <div className="modal modal-largo" role="dialog" aria-modal="true" aria-labelledby="comparar-titulo">
+      <div className="modal modal-largo" ref={janela} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="comparar-titulo">
         <div className="modal-topo">
           <h2 id="comparar-titulo">{t("Respostas lado a lado", "Side-by-side answers")}</h2>
           <button className="btn-icone" onClick={fechar} aria-label={t("Fechar", "Close")}><IconeFechar /></button>

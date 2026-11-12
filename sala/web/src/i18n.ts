@@ -92,11 +92,27 @@ const ERROS: [RegExp, string][] = [
   [/Failed to fetch|NetworkError|Load failed/i, "No connection. Check your internet and try again."],
 ];
 
+// Em português: o que vem em inglês do login e do armazenamento, e frases antigas do banco que falavam com gênero.
+const ERROS_PT: [RegExp, string][] = [
+  [/Failed to fetch|NetworkError|Load failed/i, "Sem conexão. Confira a internet e tente de novo."],
+  [/^Nesta sala você está como convidado para acompanhar\. Peça a quem cuida da sala para poder mexer nas tarefas\./, "Nesta sala você só acompanha. Peça a quem cuida da sala para poder mexer nas tarefas."],
+  [/^Nesta sala você está como convidado para acompanhar\./, "Nesta sala você só acompanha. Peça a quem cuida da sala para poder escrever."],
+  [/^Só quem é dono da sala faz isso\./, "Só quem cuida da sala faz isso."],
+  [/rate limit|security purposes|too many requests/i, "Muitas tentativas agora. Espere um pouco e tente de novo."],
+  [/invalid.*email|email.*invalid|unable to validate email/i, "Confira o email: não parece um endereço válido."],
+  [/signups? not allowed|signup is disabled/i, "Não dá para criar conta por este caminho. Entre com o Google."],
+  [/jwt expired|session.*(expired|not found)|refresh token/i, "A sua sessão venceu. Entre de novo."],
+  [/authorization.*(not found|expired)|invalid authorization/i, "Pedido de conexão inválido ou expirado."],
+  [/exceeded the maximum allowed size|payload too large/i, "O arquivo passa do tamanho permitido (10 MB)."],
+  [/row-level security|not authorized|permission denied/i, "Você não tem permissão para fazer isso nesta sala."],
+  [/duplicate|already exists/i, "Isso já existe."],
+];
+
 /** Mensagem de erro do servidor no idioma da pessoa. */
 export function erro(e: unknown): string {
   const msg = typeof e === "string" ? e : (e as { message?: string } | null)?.message ?? String(e);
   if (atual !== "en") {
-    if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return "Sem conexão. Confira a internet e tente de novo.";
+    for (const [re, pt] of ERROS_PT) if (re.test(msg)) return pt;
     return msg;
   }
   for (const [re, en] of ERROS) if (re.test(msg)) return en;
@@ -114,6 +130,7 @@ const GRAVADOS: Record<string, string> = {
   "Aprovada. O contexto da sala foi trocado pelo texto da proposta.": "Approved. The room instructions were replaced with the proposal's text.",
   "Aprovada. O plano virou tarefas, com o prazo previsto de cada uma.": "Approved. The plan became tasks, each with its planned due date.",
   "Recusada.": "Declined.",
+  "Mensagem apagada.": "Message deleted.",
   "entrou": "joined",
   "entrou como convidado (só lê)": "joined as a viewer",
   "passou a sala para": "made room owner:",
@@ -139,6 +156,8 @@ const GRAVADOS: Record<string, string> = {
   "criou a sala": "created the room",
 };
 
+// o que o banco gravou com gênero aparece sem ele
+const NEUTRO: Record<string, string> = { "entrou como convidado (só lê)": "entrou só para acompanhar" };
 const DE_VOLTA: Record<string, string> = Object.fromEntries(Object.entries(GRAVADOS).map(([pt, en]) => [en, pt]));
 
 /** Texto fixo gravado pelo sistema (decisão sem comentário, ação do histórico), no idioma pedido (por padrão, o da pessoa). */
@@ -148,7 +167,8 @@ export function gravado(texto: string, lingua: Idioma = atual): string {
     const m = texto.match(/^✓ Concluí a tarefa: (.*)$/s);
     return m ? `✓ Completed the task: ${m[1]}` : texto;
   }
-  if (DE_VOLTA[texto]) return DE_VOLTA[texto];
+  if (DE_VOLTA[texto]) return NEUTRO[DE_VOLTA[texto]] ?? DE_VOLTA[texto];
+  if (NEUTRO[texto]) return NEUTRO[texto];
   const m = texto.match(/^✓ Completed the task: (.*)$/s);
   return m ? `✓ Concluí a tarefa: ${m[1]}` : texto;
 }

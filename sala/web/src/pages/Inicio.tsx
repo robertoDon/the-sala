@@ -45,7 +45,7 @@ export default function Inicio() {
     ? (fila.length === 1 ? t("1 coisa espera por você.", "1 thing is waiting for you.") : t(`${fila.length} coisas esperam por você.`, `${fila.length} things are waiting for you.`))
     : novas
       ? t(`${novas} ${novas === 1 ? "mensagem nova" : "mensagens novas"} desde a sua última visita.`, `${novas} new ${novas === 1 ? "message" : "messages"} since your last visit.`)
-      : t(`Tudo em dia, ${nome}.`, `All caught up, ${nome}.`);
+      : nome ? t(`Tudo em dia, ${nome}.`, `All caught up, ${nome}.`) : t("Tudo em dia.", "All caught up.");
   const resumo = [
     decidir ? t(`${decidir} ${decidir === 1 ? "decisão" : "decisões"} para tomar`, `${decidir} ${decidir === 1 ? "decision" : "decisions"} to make`) : "",
     atrasadas ? t(`${atrasadas} ${atrasadas === 1 ? "tarefa atrasada" : "tarefas atrasadas"}`, `${atrasadas} overdue ${atrasadas === 1 ? "task" : "tasks"}`) : "",
@@ -61,7 +61,7 @@ export default function Inicio() {
         {salas && !salas.length && (
           <section className="inicio-primeira">
             <span className="vazio-icone vazio-vivo" aria-hidden><SimboloVivo /></span>
-            <h1>{t(`Boas-vindas, ${nome}. Crie a sua primeira sala.`, `Welcome, ${nome}. Create your first room.`)}</h1>
+            <h1>{nome ? t(`Boas-vindas, ${nome}. Crie a sua primeira sala.`, `Welcome, ${nome}. Create your first room.`) : t("Boas-vindas. Crie a sua primeira sala.", "Welcome. Create your first room.")}</h1>
             <p className="sub">{t("Uma sala por assunto. Depois é só chamar quem trabalha com você e cada pessoa conecta o próprio agente.", "One room per topic. Then invite the people you work with, and everyone connects their own agent.")}</p>
             <div className="modelos-inicio">
               {modelos().map((m) => (

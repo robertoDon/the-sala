@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useFocoPreso } from "./foco";
 import { useAuth } from "../App";
 import { desligarAvisos, estadoAvisos, ligarAvisos, type EstadoAvisos } from "../avisos";
 import { abrirConectar, apagarConta, sb, trocarIdioma } from "../supabase";
@@ -24,6 +25,7 @@ const IDIOMAS: { valor: Idioma; titulo: string }[] = [
 
 // Sua conta: nome, avisos, agentes, sair e apagar.
 export function Conta({ fechar }: { fechar: () => void }) {
+  const janela = useFocoPreso<HTMLDivElement>();
   const { perfil, sessao, recarregarPerfil } = useAuth();
   const [nome, setNome] = useState(perfil?.nome ?? "");
   const [salvo, setSalvo] = useState(false);
@@ -48,13 +50,15 @@ export function Conta({ fechar }: { fechar: () => void }) {
   const salvarNome = async () => {
     const n = nome.trim();
     if (!n || !perfil || n === perfil.nome) return;
-    await sb.from("perfis").update({ nome: n }).eq("id", perfil.id);
+    const { error } = await sb.from("perfis").update({ nome: n }).eq("id", perfil.id);
+    if (error) return recado(msgErro(error));
     recarregarPerfil(); setSalvo(true); setTimeout(() => setSalvo(false), 2000);
   };
 
   const preferir = async (avisos: string) => {
     if (!perfil) return;
-    await sb.from("perfis").update({ avisos }).eq("id", perfil.id);
+    const { error } = await sb.from("perfis").update({ avisos }).eq("id", perfil.id);
+    if (error) return recado(msgErro(error));
     recarregarPerfil();
   };
 
@@ -80,7 +84,7 @@ export function Conta({ fechar }: { fechar: () => void }) {
 
   return (
     <div className="modal-fundo" onMouseDown={(e) => e.target === e.currentTarget && fechar()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="conta-titulo">
+      <div className="modal" ref={janela} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="conta-titulo">
         <div className="modal-topo">
           <h2 id="conta-titulo">{t("Sua conta", "Your account")}</h2>
           <button className="btn-icone" onClick={fechar} aria-label={t("Fechar", "Close")}><IconeFechar /></button>

@@ -25,17 +25,18 @@ export type RefMsg = { rotulo: (id: number) => string | null; ir: (id: number) =
 
 const semEsquema = (u: string) => u.replace(/^https?:\/\//, "");
 
-// [texto](https://endereço): só http(s). Se o texto parece outro endereço (ex.: [banco.com](https://outro.com)),
-// mostra o endereço de verdade: o que se lê é sempre para onde o link leva. O destino aparece na dica.
+// [texto](https://endereço): só http(s). O que se lê diz sempre para onde o link leva: se o texto parece um endereço
+// (ex.: [banco.com](https://outro.com)), mostra o de verdade; se é um nome ("changelog"), o site vai ao lado, em cinza.
 function linkNomeado(bruto: string, k: string): ReactNode {
   const corte = bruto.indexOf("](");
   const rotulo = bruto.slice(1, corte).trim(), url = bruto.slice(corte + 2, -1);
   let host = "";
   try { host = new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch { return bruto; }
-  const pareceEndereco = /^(https?:\/\/|www\.)/i.test(rotulo) || /^[^\s/]+\.[a-z]{2,}(\/\S*)?$/i.test(rotulo);
-  const mesmoLugar = semEsquema(rotulo).replace(/^www\./, "").toLowerCase().split(/[/?#]/)[0] === host;
-  const visivel = !rotulo || (pareceEndereco && !mesmoLugar) ? semEsquema(url) : rotulo;
-  return <a key={k} href={url} title={semEsquema(url)} target="_blank" rel="noopener noreferrer">{visivel}</a>;
+  const limpo = rotulo.replace(/[\u200b-\u200f\u2060\ufeff]/g, "");
+  const pareceEndereco = /^(https?:\/\/|www\.)/i.test(limpo) || /^[^\s/]+\.[\p{L}]{2,}([/:?#]\S*)?$/iu.test(limpo);
+  const mesmoLugar = semEsquema(limpo).replace(/^www\./, "").toLowerCase().split(/[/:?#]/)[0] === host;
+  if (!limpo || pareceEndereco) return <a key={k} href={url} title={semEsquema(url)} target="_blank" rel="noopener noreferrer">{mesmoLugar ? limpo : semEsquema(url)}</a>;
+  return <a key={k} href={url} title={semEsquema(url)} target="_blank" rel="noopener noreferrer">{limpo}<span className="link-site"> ({host})</span></a>;
 }
 
 function inline(texto: string, chamaMim: (m: string) => boolean, chave: string, ref?: RefMsg): ReactNode[] {

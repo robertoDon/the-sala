@@ -157,9 +157,14 @@ export default function SalaPage() {
 
   // ---------------------------------------------------------------- carregar e ouvir
 
+  // o que a pessoa escreveu e ainda não saiu (na fila, enviando ou que falhou): vive só aqui, então nunca é descartado
+  const locais = (lista: Mensagem[] | null) => (lista ?? []).filter((m) => m.id < 0);
+
   const carregarRecentes = useCallback(async (sid: string, buffer: Mensagem[] = []) => {
-    const { data } = await sb.from("mensagens").select("*").eq("sala_id", sid).order("id", { ascending: false }).limit(PAGINA);
+    const { data, error } = await sb.from("mensagens").select("*").eq("sala_id", sid).order("id", { ascending: false }).limit(PAGINA);
     if (salaAtual.current !== sid) return;
+    // não deu para ler: continua no esqueleto e tenta de novo (sala vazia aqui mostraria a saudação de sala nova)
+    if (error) { recado(erro(error)); window.setTimeout(() => { if (salaAtual.current === sid) carregarRecentes(sid, buffer); }, 4000); return; }
     const d = (data as Mensagem[]) ?? [];
     const mapa = new Map<number, Mensagem>();
     [...d, ...buffer].forEach((m) => mapa.set(m.id, { ...mapa.get(m.id), ...m }));
@@ -171,7 +176,7 @@ export default function SalaPage() {
     const ate = marco.current?.sala === sid ? marco.current.ate : 0;
     const novas = ate ? todas.filter((m) => m.id > ate && !(m.user_id === eu && !m.agente)) : [];
     if (novas.length > 6) { rolarPara.current = -1; noFim.current = false; }
-    setMsgs(todas);
+    setMsgs((atual) => [...todas, ...locais(atual)]);
   }, []);
 
   useEffect(() => {
@@ -227,6 +232,32 @@ export default function SalaPage() {
       });
     };
     const primeira = () => { if (!carregado) { carregado = true; carregarRecentes(id, buffer); carregarTarefas(); carregarReacoes(); carregarVotos(); } };
+    // o tempo real caiu e voltou (notebook dormindo, app em segundo plano): relê as últimas mensagens e junta com o que já está na tela.
+    // Sem isso, o que chegou no intervalo nunca aparecia e ainda saía como lido.
+    let sincronizado = Date.now();
+    const sincronizar = async () => {
+      if (!carregado || longe.current || Date.now() - sincronizado < 5000) return;
+      sincronizado = Date.now();
+      const { data } = await sb.from("mensagens").select("*").eq("sala_id", id).order("id", { ascending: false }).limit(PAGINA);
+      if (salaAtual.current !== id || !data) return;
+      const d = (data as Mensagem[]).reverse();
+      setMsgs((atual) => {
+        if (!atual) return atual;
+        const reais = atual.filter((m) => m.id > 0);
+        const ultimo = reais.length ? reais[reais.length - 1].id : 0;
+        // perdeu mais de uma página: o que estava na tela não emenda com o novo, então vale o novo
+        const base = d.length === PAGINA && d[0].id > ultimo + 1 ? [] : reais;
+        if (!base.length && reais.length) setTemAnteriores(true);
+        const mapa = new Map(base.map((m) => [m.id, m]));
+        d.forEach((m) => mapa.set(m.id, { ...mapa.get(m.id), ...m }));
+        return [...[...mapa.values()].sort((a, b) => a.id - b.id), ...locais(atual)];
+      });
+      setVersaoDecisoes((v) => v + 1);
+      carregarMembros(); carregarTarefas(); carregarReacoes(); carregarVotos(); recarregar();
+    };
+    const aoVoltar = () => { if (!document.hidden) sincronizar(); };
+    document.addEventListener("visibilitychange", aoVoltar);
+    window.addEventListener("online", sincronizar);
 
     const canal = sb.channel(`sala:${id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "mensagens", filter: `sala_id=eq.${id}` }, (p) => chegou(p.new as Mensagem))
@@ -246,10 +277,16 @@ export default function SalaPage() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "agentes" }, (p) => atualizarPresenca(p.new as Agente))
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "agentes" }, (p) => atualizarPresenca(p.new as Agente))
       // assina antes de ler: nada que chegue no meio se perde
-      .subscribe((status) => { if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") primeira(); });
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED" && carregado) sincronizar();
+        if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") primeira();
+      });
     const reserva = window.setTimeout(primeira, 4000);
     const t = window.setInterval(() => setRelogio((n) => n + 1), 30_000);
-    return () => { sb.removeChannel(canal); window.clearInterval(t); window.clearTimeout(reserva); };
+    return () => {
+      sb.removeChannel(canal); window.clearInterval(t); window.clearTimeout(reserva);
+      document.removeEventListener("visibilitychange", aoVoltar); window.removeEventListener("online", sincronizar);
+    };
   }, [id, carregarRecentes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const atualizarPresenca = (a: Agente) =>
@@ -299,8 +336,8 @@ export default function SalaPage() {
   // atalhos: / busca, D decisões
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
-      const digitando = (e.target as HTMLElement)?.closest("input, textarea, [contenteditable]");
-      if (digitando || e.metaKey || e.ctrlKey || e.altKey) return;
+      const digitando = (e.target as HTMLElement)?.closest("input, textarea, select, [contenteditable]");
+      if (digitando || e.metaKey || e.ctrlKey || e.altKey || document.querySelector(".modal-fundo, .cmd-fundo, .guia")) return;
       if (e.key === "/") { e.preventDefault(); setPainel("busca"); }
       if (e.key === "d") { e.preventDefault(); setPainel((p) => (p === "decisoes" ? null : "decisoes")); }
       if (e.key === "t") { e.preventDefault(); setPainel((p) => (p === "tarefas" ? null : "tarefas")); }
@@ -333,7 +370,7 @@ export default function SalaPage() {
     if (window.matchMedia("(max-width: 720px), (max-height: 500px) and (pointer: coarse)").matches) setPainel(null);
     setDestaque(alvo); window.setTimeout(() => setDestaque((d) => (d === alvo ? null : d)), 1600);
     const el = document.getElementById(`m${alvo}`);
-    if (el) { noFim.current = false; el.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+    if (el) { noFim.current = false; el.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); return; }
     // fora do que está carregado: abre uma janela em volta dela
     const sid = id;
     const [antes, depois] = await Promise.all([
@@ -347,7 +384,7 @@ export default function SalaPage() {
     setTemAnteriores(a.length === 50);
     const recortada = d.length === PAGINA;
     setTemPosteriores(recortada); longe.current = recortada;
-    setMsgs([...a, ...d]);
+    setMsgs((atual) => [...a, ...d, ...locais(atual)]);
   }, [id]);
 
   // ---------------------------------------------------------------- enviar e agir
@@ -359,7 +396,7 @@ export default function SalaPage() {
       .select("*").single();
     setMsgs((a) => {
       if (!a) return a;
-      if (error) return a.map((x) => (x.id === temp.id ? { ...x, pendente: false, falhou: true } : x));
+      if (error) return a.map((x) => (x.id === temp.id ? { ...x, pendente: false, falhou: true, motivo: /fetch|network/i.test(error.message) ? undefined : erro(error) } : x));
       if (a.some((x) => x.id === data.id)) return a.filter((x) => x.id !== temp.id);
       return a.map((x) => (x.id === temp.id ? (data as Mensagem) : x));
     });
@@ -604,8 +641,8 @@ export default function SalaPage() {
   const vazia = msgs !== null && msgs.length === 0 && !leitor;
   const primeiroNome = (perfil?.nome ?? "").split(" ")[0];
   const saudacoes = [
-    t(`No que vamos trabalhar, ${primeiroNome}?`, `What are we working on, ${primeiroNome}?`),
-    t(`Por onde começamos, ${primeiroNome}?`, `Where do we start, ${primeiroNome}?`),
+    primeiroNome ? t(`No que vamos trabalhar, ${primeiroNome}?`, `What are we working on, ${primeiroNome}?`) : t("No que vamos trabalhar?", "What are we working on?"),
+    primeiroNome ? t(`Por onde começamos, ${primeiroNome}?`, `Where do we start, ${primeiroNome}?`) : t("Por onde começamos?", "Where do we start?"),
     t(`O que esta sala precisa resolver?`, `What does this room need to solve?`),
   ];
   const saudacao = saudacoes[[...id].reduce((n, c) => n + c.charCodeAt(0), 0) % saudacoes.length];
@@ -677,7 +714,7 @@ export default function SalaPage() {
             </button>
           </header>
 
-          {convite && sala && (
+          {convite && sala && !leitor && link && (
             <div className="convite" role="region" aria-label={t("Convite", "Invite")}>
               <p>{t("Quem abrir este link entra na sala e pode conectar os próprios agentes. Serve para gente de qualquer empresa.", "Anyone with this link can join the room and connect their own agents. Works for people at any company.")}</p>
               <div className="copiar-campo">

@@ -419,7 +419,7 @@ export default function Landing() {
           </div>
           <div className="lp-confianca-grade">
             {[
-              [t("Só quem está na sala lê", "Only room members can read"), t("Entra quem recebeu o convite. Precisa só acompanhar? Há um link de convidado que só lê.", "Only people with the invite get in. Just need someone to follow along? There's a view-only guest link.")],
+              [t("Só quem está na sala lê", "Only room members can read"), t("Entra quem recebeu o convite. Precisa só acompanhar? Há um link só de leitura.", "Only people with the invite get in. Just need someone to follow along? There's a view-only guest link.")],
               [t("Todo agente diz em nome de quem fala", "Every agent says who it speaks for"), t("“Claude de Ana”, “ChatGPT de Bruno”. O agente escreve pelo servidor, com a permissão de quem o conectou.", "“Ana's Claude”, “Bruno's ChatGPT”. Agents write through the server, with the permission of whoever connected them.")],
               [t("Você sai quando quiser", "Leave whenever you want"), t("Sair de uma sala é um clique. Apagar a conta apaga os seus dados.", "Leaving a room takes one click. Deleting your account deletes your data.")],
             ].map(([h, p], i) => (

@@ -24,6 +24,11 @@ export type ItemPlano = { titulo: string; frente?: string; responsavel?: string;
 export type Agente = { user_id: string; nome: string; visto_em: string; ouvindo_ate: string | null; desperta?: boolean; papel?: string | null; declarado?: boolean };
 export type Membro = { user_id: string; papel: "dono" | "membro" | "leitor"; perfis: Perfil | null };
 
+/** Foto de perfil: só a que veio do login com Google. Outro endereço serviria de pixel de rastreio para a sala inteira. */
+export const fotoSegura = (url: string | null | undefined) => {
+  try { const u = new URL(url ?? ""); return u.protocol === "https:" && u.hostname.endsWith(".googleusercontent.com") ? u.href : null; } catch { return null; }
+};
+
 export const abrirConectar = () => window.dispatchEvent(new Event("sala:conectar"));
 
 /** Tom fixo do agente (1 a 6), tirado do nome: o mesmo agente tem sempre a mesma cor, em qualquer sala. */
@@ -54,6 +59,7 @@ export type Mensagem = {
   pendente?: boolean; // enviando
   fila?: boolean; // esperando um agente terminar de ler a sala para sair
   falhou?: boolean;
+  motivo?: string; // por que não enviou (quando o banco disse)
 };
 
 // Presença do agente, em texto (nunca só cor): "ouvindo agora", "visto há 3 h"
@@ -120,7 +126,7 @@ export async function subirArquivo(sala: string, eu: string, f: File): Promise<A
   return { path, nome, tipo: f.type || "application/octet-stream", tamanho: f.size };
 }
 
-// links temporários (1 h), guardados para não pedir de novo a cada tela
+// links temporários (valem 1 h), guardados por 45 min para não pedir de novo a cada tela; quem mostra renova antes de vencer
 const links = new Map<string, { url: string; ate: number }>();
 export async function linksDe(paths: string[], baixar = false): Promise<Record<string, string>> {
   const agora = Date.now();
@@ -128,7 +134,7 @@ export async function linksDe(paths: string[], baixar = false): Promise<Record<s
   const faltam = paths.filter((p) => !((links.get(chave(p))?.ate ?? 0) > agora));
   if (faltam.length) {
     const { data } = await sb.storage.from("arquivos").createSignedUrls(faltam, 3600, baixar ? { download: true } : undefined);
-    data?.forEach((d) => d.path && d.signedUrl && links.set(chave(d.path), { url: d.signedUrl, ate: agora + 55 * 60_000 }));
+    data?.forEach((d) => d.path && d.signedUrl && links.set(chave(d.path), { url: d.signedUrl, ate: agora + 45 * 60_000 }));
   }
   return Object.fromEntries(paths.map((p) => [p, links.get(chave(p))?.url ?? ""]));
 }
@@ -174,8 +180,13 @@ const abrirCom = (agente: string, texto: string) => {
     : null;
 };
 
+// Nome de sala, título de tarefa e nome de autor são escritos por outras pessoas e agentes. No pedido eles entram
+// como rótulo curto, numa linha, sem aspas: não dá para fechar a citação e emendar uma instrução no prompt da pessoa.
+const rotulo = (s: string, n = 80) => s.replace(/[\u0000-\u001f\u007f"“”«»`]+/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+
 /** "Pedir ao meu agente" a partir de uma tarefa: ele lê a sala, faz e conclui com o resultado. */
-export function pedidoTarefa(agente: string, sala: string, tarefa: { id: number; titulo: string }) {
+export function pedidoTarefa(agente: string, salaNome: string, tarefaDada: { id: number; titulo: string }) {
+  const sala = rotulo(salaNome), tarefa = { id: tarefaDada.id, titulo: rotulo(tarefaDada.titulo, 120) };
   const texto = t(
     `Leia a sala "${sala}" no The Sala e faça a tarefa "${tarefa.titulo}" (tarefa ${tarefa.id}). ` +
     `Use ler_mensagens e ver_tarefas para entender o contexto. Quando terminar, use concluir_tarefa com o resultado (e o arquivo, se houver). Se precisar de uma decisão, use fazer_proposta.`,
@@ -185,15 +196,12 @@ export function pedidoTarefa(agente: string, sala: string, tarefa: { id: number;
 }
 
 // Claude e ChatGPT abrem com o pedido já escrito; nos outros, o pedido vai para a área de transferência.
-export function pedidoPara(agente: string, sala: string, m: { id: number }, autor: string) {
+export function pedidoPara(agente: string, salaNome: string, m: { id: number }, autorNome: string) {
+  const sala = rotulo(salaNome), autor = rotulo(autorNome, 60);
   const texto = t(
     `Leia a sala "${sala}" no The Sala e responda à mensagem #${m.id} de ${autor}. ` +
     `Use ler_mensagens para ver a conversa e enviar_mensagem com responde_a=${m.id} para responder. Se precisar de uma decisão, use fazer_proposta.`,
     `Read the room "${sala}" on The Sala and reply to message #${m.id} from ${autor}. ` +
     `Use ler_mensagens to see the conversation and enviar_mensagem with responde_a=${m.id} to reply. If you need a decision, use fazer_proposta.`);
-  const a = agente.toLowerCase();
-  const url = a === "claude" ? `https://claude.ai/new?q=${encodeURIComponent(texto)}`
-    : a === "chatgpt" ? `https://chatgpt.com/?q=${encodeURIComponent(texto)}`
-    : null;
-  return { texto, url };
+  return { texto, url: abrirCom(agente, texto) };
 }

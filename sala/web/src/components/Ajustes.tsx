@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { abrirConectar, copiarTexto, sb, tomDoAgente, type Membro, type Sala } from "../supabase";
+import { abrirConectar, copiarTexto, fotoSegura, sb, tomDoAgente, type Membro, type Sala } from "../supabase";
 import { montarRoster, type AgenteRoster } from "../../../supabase/functions/_shared/agentes";
 import type { AgenteSala } from "../pages/Sala";
 import { IconeAgente, IconeCheck, IconeFechar, IconeVoltar } from "./Icones";
@@ -75,6 +75,13 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
   const nomeDe = (uid: string | null) => membros.find((m) => m.user_id === uid)?.perfis?.nome ?? t("Alguém", "Someone");
 
   useEffect(() => { setNome(sala.nome); setContexto(sala.contexto); }, [sala.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // as instruções mudaram por fora (proposta aprovada) com o painel aberto: se ninguém está editando aqui, acompanha.
+  // Sem isso, "Salvar instruções" aparecia sozinho e um clique gravava o texto antigo por cima do aprovado.
+  const contextoVisto = useRef(sala.contexto);
+  useEffect(() => {
+    setContexto((atual) => (atual === contextoVisto.current ? sala.contexto : atual));
+    contextoVisto.current = sala.contexto;
+  }, [sala.contexto]);
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && fechar();
     window.addEventListener("keydown", esc);
@@ -95,7 +102,9 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
   };
 
   const remover = async (m: Membro) => {
-    await sb.from("membros").delete().eq("sala_id", sala.id).eq("user_id", m.user_id);
+    const { error } = await sb.from("membros").delete().eq("sala_id", sala.id).eq("user_id", m.user_id);
+    if (error) return recado(erro(error));
+    recarregar(); // tirar alguém troca os convites da sala (quem saiu não volta com o link antigo)
   };
 
   const mudarPapel = async (m: Membro, papel: "membro" | "leitor") => {
@@ -206,7 +215,7 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
             const m = membros.find((x) => x.user_id === g.pessoa.user_id)!;
             return [
               <li key={m.user_id} className="linha-item">
-                {m.perfis?.avatar ? <img className="avatar" src={m.perfis.avatar} alt="" referrerPolicy="no-referrer" /> : <span className="avatar">{m.perfis?.nome?.[0]}</span>}
+                {fotoSegura(m.perfis?.avatar) ? <img className="avatar" src={fotoSegura(m.perfis?.avatar)!} alt="" referrerPolicy="no-referrer" /> : <span className="avatar">{m.perfis?.nome?.[0]}</span>}
                 <span className="linha-texto">
                   <span className="linha-titulo">{m.perfis?.nome} <span className="nota">@{g.pessoa.nome.split(" ")[0]}</span></span>
                   <span className="presenca">{m.user_id === eu ? t("você", "you") : t("pessoa", "person")}{g.ultima ? ` · ${t("escreveu aqui", "wrote here")} ${haQuanto(g.ultima)}` : ""}</span>
@@ -216,7 +225,7 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
                   <Menu rotulo={t(`Ações para ${m.perfis?.nome}`, `Actions for ${m.perfis?.nome}`)} itens={[
                     m.papel === "leitor" ? { rotulo: t("Liberar para escrever", "Allow writing"), acao: () => mudarPapel(m, "membro") }
                       : { rotulo: t("Deixar só ler", "Make viewer"), acao: () => mudarPapel(m, "leitor") },
-                    m.papel !== "leitor" && { rotulo: t("Tornar dono", "Make room owner"), acao: () => tornarDono(m), confirmar: t(`${m.perfis?.nome} também passa a cuidar da sala: muda nome e instruções, convida, tira pessoas e pode apagar a sala.`, `${m.perfis?.nome} will also become a room owner: they can rename the room, edit its instructions, invite and remove people, and delete the room.`) },
+                    m.papel !== "leitor" && { rotulo: t("Passar a cuidar da sala", "Make room owner"), acao: () => tornarDono(m), confirmar: t(`${m.perfis?.nome} também passa a cuidar da sala: muda nome e instruções, convida, tira pessoas e pode apagar a sala.`, `${m.perfis?.nome} will also become a room owner: they can rename the room, edit its instructions, invite and remove people, and delete the room.`) },
                     { rotulo: t("Tirar da sala", "Remove from room"), acao: () => remover(m), perigo: true, confirmar: t("Os agentes dessa pessoa também saem.", "Their agents will be removed too.") },
                   ]} />
                 ) : <span className="menu-vazio" aria-hidden />}

@@ -18,6 +18,9 @@ const dominio = (u: string) => { try { return new URL(u).hostname.replace(/^www\
 const extensao = (n: string | null) => (n?.includes(".") ? n.split(".").pop()!.toUpperCase().slice(0, 5) : t("Arquivo", "File"));
 const data = (iso: string) => new Date(iso).toLocaleDateString(locale(), { day: "numeric", month: "short" }).replace(".", "");
 
+// aba nova sem ligação com o app: o arquivo aberto não alcança esta janela (window.opener)
+const abaSolta = () => { const j = window.open("", "_blank"); if (j) j.opener = null; return j; };
+
 // Biblioteca da sala: arquivos e links de referência. Pessoas e agentes adicionam, editam e tiram;
 // os agentes leem daqui antes de responder.
 export function Biblioteca({ salaId, eu, podeEscrever, nome, fechar, abrirMemoria, irPara }: Props) {
@@ -32,7 +35,7 @@ export function Biblioteca({ salaId, eu, podeEscrever, nome, fechar, abrirMemori
           quem: m.agente ? t(`${m.agente} de ${nome(m.user_id).split(" ")[0]}`, `${nome(m.user_id).split(" ")[0]}'s ${m.agente}`) : m.user_id === eu ? t("você", "you") : nome(m.user_id).split(" ")[0] })))));
   }, [salaId]); // eslint-disable-line react-hooks/exhaustive-deps
   const baixar = async (a: ArquivoConversa) => {
-    const janela = window.open("", "_blank");
+    const janela = abaSolta();
     const url = (await linksDe([a.path], true))[a.path];
     if (janela && url) janela.location.href = url; else janela?.close();
   };
@@ -64,8 +67,10 @@ export function Biblioteca({ salaId, eu, podeEscrever, nome, fechar, abrirMemori
 
   const abrir = async (b: ItemBiblioteca) => {
     if (b.url) return window.open(b.url, "_blank", "noopener");
-    const janela = window.open("", "_blank");
-    const url = (await linksDe([b.path!]))[b.path!];
+    // na aba só abre o que é só de olhar (imagem e PDF); o resto baixa. Arquivo de outra pessoa nunca roda como página.
+    const deOlhar = /^image\/(?!svg)/.test(b.mime ?? "") || b.mime === "application/pdf";
+    const janela = abaSolta();
+    const url = (await linksDe([b.path!], !deOlhar))[b.path!];
     if (janela && url) janela.location.href = url; else janela?.close();
   };
 

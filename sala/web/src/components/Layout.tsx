@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../App";
-import { sb, type ItemFila, type Mensagem, type Sala } from "../supabase";
+import { fotoSegura, sb, type ItemFila, type Mensagem, type Sala } from "../supabase";
 import { prefs, tocarPlim } from "../preferencias";
 import { chamaTodos, handle } from "./Texto";
-import { gravado, idioma, locale, t } from "../i18n";
+import { erro, gravado, idioma, locale, t } from "../i18n";
+import { recado } from "./Recados";
 import { publicarFila } from "../fila";
 import { IconeAgente, IconeBusca, IconeCasa, IconeMais, Marcador, IconePlugue, IconeProposta, IconeSino, IconeVoltar, Marca } from "./Icones";
 import { Conectar } from "./Conectar";
@@ -22,15 +23,25 @@ export function useSalas() {
   const [fila, setFila] = useState<ItemFila[]>([]);
   const espera = useRef<number | undefined>(undefined);
 
+  const falhas = useRef(0);
   const carregar = async () => {
-    const [{ data }, f] = await Promise.all([sb.rpc("minhas_salas"), sb.rpc("minha_fila")]);
+    const [{ data, error }, f] = await Promise.all([sb.rpc("minhas_salas"), sb.rpc("minha_fila")]);
+    // sem rede (ou o banco fora): fica o que já estava na tela e tenta de novo. Lista vazia aqui viraria "crie a sua primeira sala".
+    if (error) {
+      if (!falhas.current++) recado(erro(error));
+      window.clearTimeout(espera.current);
+      espera.current = window.setTimeout(carregar, Math.min(30_000, 2000 * 2 ** Math.min(falhas.current, 4)));
+      return;
+    }
+    falhas.current = 0;
     setSalas((data as Sala[]) ?? []);
-    setFila((f.data as ItemFila[]) ?? []);
+    if (!f.error) setFila((f.data as ItemFila[]) ?? []);
   };
 
   useEffect(() => {
     carregar();
     const depois = () => { window.clearTimeout(espera.current); espera.current = window.setTimeout(carregar, 250); };
+    let assinou = 0;
     const canal = sb.channel("minhas-salas")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "mensagens" }, (p) => {
         depois();
@@ -44,8 +55,15 @@ export function useSalas() {
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "membros" }, depois)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "votos" }, depois)
       .on("postgres_changes", { event: "*", schema: "public", table: "tarefas" }, depois)
-      .subscribe();
-    return () => { sb.removeChannel(canal); window.clearTimeout(espera.current); };
+      // voltou a conexão do tempo real: o que mudou no meio não chegou, então relê
+      .subscribe((status) => { if (status === "SUBSCRIBED" && assinou++) depois(); });
+    const aoVoltar = () => { if (!document.hidden) depois(); };
+    document.addEventListener("visibilitychange", aoVoltar);
+    window.addEventListener("online", depois);
+    return () => {
+      sb.removeChannel(canal); window.clearTimeout(espera.current);
+      document.removeEventListener("visibilitychange", aoVoltar); window.removeEventListener("online", depois);
+    };
   }, []);
 
   // a mesma fila no ícone do app e no widget (só depois da primeira leitura: lista vazia de início não zera o número)
@@ -124,8 +142,8 @@ export function Layout({ children, salas, recarregar, foco, fila = [] }: {
 
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
-      const digitando = (e.target as HTMLElement)?.closest("input, textarea, [contenteditable]");
-      if (digitando || e.metaKey || e.ctrlKey || e.altKey) return;
+      const digitando = (e.target as HTMLElement)?.closest("input, textarea, select, [contenteditable]");
+      if (digitando || e.metaKey || e.ctrlKey || e.altKey || document.querySelector(".modal-fundo, .cmd-fundo, .guia")) return;
       if (e.key === "n") { e.preventDefault(); setCriando(true); }
       if (e.key === "a") { e.preventDefault(); setConectar(true); }
     };
@@ -199,7 +217,7 @@ export function Layout({ children, salas, recarregar, foco, fila = [] }: {
             <IconePlugue tamanho={16} /><span>{t("Conectar agente", "Connect agent")}</span><kbd>A</kbd>
           </button>
           <button className="eu" data-guia="conta" onClick={() => setConta(true)} title={t("Sua conta, avisos e sair", "Account, notifications and sign out")}>
-            {perfil?.avatar ? <img src={perfil.avatar} alt="" className="avatar" referrerPolicy="no-referrer" /> : <span className="avatar">{perfil?.nome?.[0]}</span>}
+            {fotoSegura(perfil?.avatar) ? <img src={fotoSegura(perfil?.avatar)!} alt="" className="avatar" referrerPolicy="no-referrer" /> : <span className="avatar">{perfil?.nome?.[0]}</span>}
             <span className="eu-nome"><strong>{perfil?.nome}</strong><span>{t("Conta, avisos e tema", "Account, notifications, theme")}</span></span>
             <IconeVoltar tamanho={14} />
           </button>

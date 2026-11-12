@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useFocoPreso } from "./foco";
 import { MCP_URL, presenca, sb, type Agente } from "../supabase";
 import { useAuth } from "../App";
 import { IconeAgente, IconeChave, IconeFechar, IconeMais, IconePlugue, IconeRelogio, IconeVoltar } from "./Icones";
@@ -6,23 +7,15 @@ import { Sozinho, SozinhoEventos } from "./Sozinho";
 import { BotaoCopiar, Copiavel, Trilha } from "./Trilha";
 import { erro, idioma, locale, t } from "../i18n";
 import { recado } from "./Recados";
+import { nomeDoApp } from "../../../supabase/functions/_shared/agentes";
 
 type Aba = "claude" | "chatgpt" | "gemini" | "code" | "outro";
 type Chave = { id: string; agente: string; final: string; criada_em: string; usada_em: string | null };
 type Grant = { client: { id: string; name: string }; granted_at: string };
 
 
-// mesmo critério do servidor para dar nome ao agente
-export function nomeDoAgente(cliente: string) {
-  const l = cliente.toLowerCase();
-  if (l.includes("claude code")) return "Claude Code";
-  if (l.includes("claude")) return "Claude";
-  if (l.includes("chatgpt") || l.includes("openai")) return "ChatGPT";
-  if (l.includes("gemini")) return "Gemini";
-  if (l.includes("codex")) return "Codex";
-  if (l.includes("cursor")) return "Cursor";
-  return cliente.trim().slice(0, 40) || "Agente";
-}
+// o nome do agente é o do servidor (a mesma função), para o que aparece aqui bater com a sala
+const nomeDoAgente = nomeDoApp;
 
 // "3 de nov, 23:11"; o ano só aparece quando não é o atual
 const quandoHora = (iso: string) => {
@@ -32,6 +25,7 @@ const quandoHora = (iso: string) => {
 const quando = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: "2-digit", month: "short" }) : t("nunca", "never"));
 
 export function Conectar({ fechar }: { fechar: () => void }) {
+  const janela = useFocoPreso<HTMLDivElement>();
   const { perfil } = useAuth();
   const [aba, setAba] = useState<Aba | null>(null); // escolhido: mostra só os passos dele
   const [escolhendo, setEscolhendo] = useState(false); // quem já tem agentes vê a lista primeiro e escolhe "conectar outro"
@@ -134,7 +128,7 @@ Keep listening to the room in the background and respond to anything meant for y
 
   return (
     <div className="modal-fundo" onMouseDown={(e) => e.target === e.currentTarget && fechar()}>
-      <div className={`modal modal-conectar conectar-${tela}`} role="dialog" aria-modal="true" aria-labelledby="conectar-titulo">
+      <div className={`modal modal-conectar conectar-${tela}`} ref={janela} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="conectar-titulo">
         <header className="conectar-topo">
           {voltar
             ? <button type="button" className="btn-icone" onClick={voltar} aria-label={t("Voltar", "Back")} title={t("Voltar", "Back")}><IconeVoltar /></button>

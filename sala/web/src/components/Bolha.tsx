@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { tomDoAgente, type Mensagem } from "../supabase";
+import { fotoSegura, tomDoAgente, type Mensagem } from "../supabase";
 import { IconeAgente, IconeJoinha, IconeReagir, IconeCopiar, IconeCheck, IconeDecisao, IconeFechar, IconeLapis, IconeLixo, IconeProposta, IconeRecusa, IconeResponder, IconeTarefa } from "./Icones";
 import { Texto } from "./Texto";
 import { Anexos } from "./Anexos";
@@ -167,6 +167,8 @@ export function Bolha(p: Props) {
     if (e) setErro(e); else { setRecusando(false); setErro(""); }
   };
 
+  // texto que o sistema gravou (decisão, tarefa concluída, mensagem apagada) aparece no idioma da sala; o que alguém escreveu fica como foi escrito
+  const sistema = m.tipo === "decisao" || m.apagada || m.texto.startsWith("✓ ");
   const cls = ["msg", m.agente ? "msg-agente" : "msg-pessoa", minha ? "msg-minha" : "", m.pendente ? "msg-pendente" : "",
     m.falhou ? "msg-falhou" : "", m.fila ? "msg-na-fila" : "", continua && !proposta ? "msg-continua" : "", proposta ? "msg-proposta" : "",
     m.apagada ? "msg-apagada" : "", p.destaque ? "msg-destaque" : "", decidiuAgora ? "msg-decidiu" : ""].join(" ");
@@ -185,7 +187,7 @@ export function Bolha(p: Props) {
             <strong>{tr("Você", "You")}</strong>
           ) : (
             <>
-              <span className="msg-avatar" aria-hidden>{p.avatar ? <img src={p.avatar} alt="" referrerPolicy="no-referrer" /> : (nome.trim()[0] ?? "?").toUpperCase()}</span>
+              <span className="msg-avatar" aria-hidden>{fotoSegura(p.avatar) ? <img src={fotoSegura(p.avatar)!} alt="" referrerPolicy="no-referrer" /> : (nome.trim()[0] ?? "?").toUpperCase()}</span>
               <strong>{nome}</strong>
             </>
           )}
@@ -233,7 +235,7 @@ export function Bolha(p: Props) {
             <p className="apagada">{tr("Mensagem apagada.", "Message deleted.")}</p>
           ) : (
             <>
-              {m.texto && <Texto texto={naConversa(m.texto)} chamaMim={p.chamaMim ?? (() => false)} refMsg={p.irPara && p.autorDe ? {
+              {m.texto && <Texto texto={sistema ? naConversa(m.texto) : m.texto} chamaMim={p.chamaMim ?? (() => false)} refMsg={p.irPara && p.autorDe ? {
                 ir: (id) => (p.autorDe?.(id) ? p.irPara!(id) : p.abrirTarefas?.()),
                 rotulo: (id) => { const a = p.autorDe?.(id); if (a) return `↩ ${a}`; const tf = p.tarefaDe?.(id); return tf ? `☐ ${tf.length > 48 ? tf.slice(0, 47) + "…" : tf}` : null; },
               } : undefined} />}
@@ -365,7 +367,7 @@ export function Bolha(p: Props) {
       {erro && <p className="msg-erro" role="alert">{erro}</p>}
       {m.falhou && (
         <p className="msg-erro" role="alert">
-          {tr("Não enviou.", "Couldn't send.")} <button type="button" className="link" onClick={p.tentarDeNovo}>{tr("Tentar de novo", "Try again")}</button>
+          {m.motivo ? tr(`Não enviou: ${m.motivo}`, `Couldn't send: ${m.motivo}`) : tr("Não enviou.", "Couldn't send.")} <button type="button" className="link" onClick={p.tentarDeNovo}>{tr("Tentar de novo", "Try again")}</button>
         </p>
       )}
     </article>
@@ -376,7 +378,7 @@ export function Bolha(p: Props) {
 export function Evento({ m, quem, de, quando, irPara }: { m: Mensagem; quem: string; de: string; quando: string; irPara?: (id: number) => void }) {
   const aprovou = m.estado === "aprovada";
   const ajuste = m.estado === "ajuste";
-  const nota = m.texto !== "Aprovada." && m.texto !== "Recusada." ? m.texto : "";
+  const nota = m.texto !== "Aprovada." && m.texto !== "Recusada." ? naConversa(m.texto) : "";
   return (
     <div className={`evento evento-${m.estado}`} id={`m${m.id}`}>
       <span className="evento-icone" aria-hidden>{aprovou ? <IconeDecisao tamanho={16} /> : ajuste ? <IconeLapis tamanho={16} /> : <IconeRecusa tamanho={16} />}</span>

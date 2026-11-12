@@ -340,6 +340,11 @@
 .lp-permissoes { list-style: none; margin: 8px 0 12px; padding: 16px 0 0; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--linha); }
 .lp-permissoes li { display: grid; grid-template-columns: 16px 1fr; gap: 12px; color: var(--cinza); line-height: 1.5; }
 .lp-permissoes svg { margin-top: 3px; color: var(--ok); }
+/* para onde o acesso vai: sempre à vista; fora dos apps conhecidos, no quente */
+.lp-consent-destino { margin: 0 0 4px; padding: 10px 12px; border-radius: var(--r2); background: var(--suave); box-shadow: inset 0 0 0 1px var(--linha); color: var(--cinza); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.lp-consent-destino strong { color: var(--tinta); font-weight: 600; }
+.lp-consent-alerta { background: color-mix(in srgb, var(--quente) 8%, var(--elevado)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--quente) 35%, transparent); color: var(--tinta); }
+.lp-consent-alerta strong { color: var(--quente); }
 .lp-consent-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .lp-consent-botoes .lp-btn { width: 100%; }
 .lp-consent .lp-nota { display: block; text-align: center; margin-top: 6px; }

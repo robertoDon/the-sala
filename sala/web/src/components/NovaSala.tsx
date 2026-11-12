@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useFocoPreso } from "./foco";
 import { useNavigate } from "react-router-dom";
 import { sb } from "../supabase";
 import { erro as traduzir, t } from "../i18n";
@@ -39,6 +40,7 @@ export const modelos = () => [
 ];
 
 export function NovaSala({ fechar, aoCriar, modeloInicial = "branco" }: { fechar: () => void; aoCriar?: () => void; modeloInicial?: string }) {
+  const janela = useFocoPreso<HTMLFormElement>();
   const nav = useNavigate();
   const lista = modelos();
   const [modelo, setModelo] = useState(modeloInicial);
@@ -74,7 +76,7 @@ export function NovaSala({ fechar, aoCriar, modeloInicial = "branco" }: { fechar
 
   return (
     <div className="modal-fundo" onMouseDown={(e) => e.target === e.currentTarget && fechar()}>
-      <form className="modal" role="dialog" aria-modal="true" aria-labelledby="nova-titulo" onSubmit={criar}>
+      <form className="modal" ref={janela} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="nova-titulo" onSubmit={criar}>
         <div className="modal-topo">
           <h2 id="nova-titulo">{t("Nova sala", "New room")}</h2>
           <button type="button" className="btn-icone" onClick={fechar} aria-label={t("Fechar", "Close")}><IconeFechar /></button>

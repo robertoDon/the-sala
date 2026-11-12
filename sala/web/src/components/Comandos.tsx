@@ -62,7 +62,8 @@ export function Comandos({ salas, salaAberta, novaSala, conectar, conta }: {
         { id: "biblioteca", grupo: g, rotulo: t("Biblioteca", "Library"), dica: t("arquivos e links", "files and links"), tecla: "B", icone: <IconeBiblioteca tamanho={16} />, fazer: painel("biblioteca") },
         { id: "memoria", grupo: g, rotulo: t("Memória da sala", "Room memory"), tecla: "M", icone: <IconeMemoria tamanho={16} />, fazer: painel("memoria") },
         { id: "busca", grupo: g, rotulo: t("Buscar na conversa", "Search the conversation"), tecla: "/", icone: <IconeBusca tamanho={16} />, fazer: painel("busca") },
-        { id: "convidar", grupo: g, rotulo: t("Convidar pessoas", "Invite people"), icone: <IconeConvite tamanho={16} />, fazer: () => window.dispatchEvent(new Event("sala:convidar")) },
+        // quem só acompanha não tem link de convite para mandar
+        ...(salas?.find((s) => s.id === salaAberta)?.papel === "leitor" ? [] : [{ id: "convidar", grupo: g, rotulo: t("Convidar pessoas", "Invite people"), icone: <IconeConvite tamanho={16} />, fazer: () => window.dispatchEvent(new Event("sala:convidar")) }]),
         { id: "ajustes", grupo: g, rotulo: t("Ajustes da sala", "Room settings"), dica: t("instruções, pessoas, aprovações", "instructions, people, approvals"), icone: <IconeAjustes tamanho={16} />, fazer: painel("ajustes") },
       );
     }

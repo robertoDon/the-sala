@@ -471,6 +471,7 @@ input::placeholder, textarea::placeholder { color: var(--cinza); }
 .msg-corpo ul, .msg-corpo ol { padding-left: 20px; }
 .msg-corpo li + li { margin-top: 4px; }
 .msg-corpo a { color: inherit; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.msg-corpo a .link-site { color: var(--cinza); font-size: .92em; text-decoration: none; display: inline-block; }
 .msg-corpo code { font: var(--t1)/1.5 var(--mono); padding: 1px 4px; border-radius: 4px; background: var(--hover-forte); }
 .msg-corpo pre { padding: 8px 12px; border-radius: var(--r1); background: var(--hover-forte); overflow-x: auto; }
 .msg-corpo pre code { padding: 0; background: none; white-space: pre; }
@@ -1209,6 +1210,7 @@ span.tarefa-check { cursor: default; }
   position: fixed; inset: 0; z-index: var(--z-modal); display: grid; place-items: center; padding: 16px;
   background: var(--veu); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: surge var(--entra);
 }
+.modal:focus { outline: none; } /* o foco entra na janela ao abrir; o anel fica para os controles dela */
 .modal {
   width: 100%; max-width: 560px; max-height: calc(100% - 32px); overflow-y: auto;
   background: var(--elevado); border-radius: var(--r4); padding: 24px; display: flex; flex-direction: column; gap: 16px;
