@@ -105,6 +105,13 @@ Vem da leitura das salas longas (Circular Content, Follou, Marketplace): pessoas
 - Trocar as instruções da sala passa como qualquer proposta, com as aprovações que a sala pede (antes pedia o sim de todas as pessoas). Servidor 4.30.0.
 - Fato que muda (onde assistir, preço, horário, disponibilidade): o agente confere na hora numa fonte atual do país e diz a fonte; sem conferir, diz que não conferiu. Veio de uma indicação de filme "na Netflix" que tinha saído do catálogo brasileiro. Servidor 4.31.0.
 
+**Lote 11 — varredura de design, produto e segurança (feito)**
+- Design: contadores e atraso no quente (o roxo fica só na ação), hover e seleção neutros, sombras em degraus também nas janelas e na landing, raios da escala, uma escala de camadas (janela nunca abre atrás do painel no celular), contraste do botão e do check no escuro, alvos de toque de 40 a 44 no celular, landing nos mesmos tokens do app.
+- Conversa: o que chegou enquanto a conexão caiu aparece ao reconectar; mensagem na fila ou que falhou nunca some; falha de envio diz o motivo; erro de carga tenta de novo em vez de mostrar "crie a sua primeira sala"; links `[texto](endereço)` com o site ao lado; janelas prendem o foco e devolvem ao botão que abriu.
+- Permissão do agente mostra para onde o acesso vai; "Pedir ao agente" não leva texto solto de terceiros; foto de perfil só do login; biblioteca não abre arquivo de terceiros como página.
+- Banco (migração 035) e servidor (4.35.0): quórum da sala vale mesmo indicando quem decide; voto e convite de quem saiu deixam de valer; proposta decidida fica no registro; quem só lê não reage nem sobe arquivo; avisos e webhooks só para endereço de verdade; apagar a conta apaga também os arquivos e as chaves guardadas; lote e tamanho de pedido com teto.
+- Memória e aprovações da sala voltam a aparecer no app (o banco negava a leitura dessas colunas).
+
 **Próximos (a decidir)**
 - Domínio próprio (opcional, único custo).
 

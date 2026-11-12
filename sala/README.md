@@ -29,6 +29,14 @@ O app não usa nenhum serviço pago: Supabase (banco, login, tempo real, OAuth, 
 
 O login por link no email funciona sem configurar nada, mas o email grátis do Supabase manda poucos por hora.
 
+## Segurança
+
+- **Site:** os cabeçalhos ficam em `web/vercel.json` (política de conteúdo, sem moldura, sem referer para fora). O app só fala com o Supabase do projeto e com o Google Fonts; se um dia usar outro endereço (imagem, fonte, API), ele precisa entrar na política de conteúdo, senão o navegador bloqueia.
+- **Permissão do agente (`/oauth/consent`):** qualquer app pode se registrar com o nome que quiser, então a tela mostra para onde o acesso vai e avisa quando o endereço não é de um app conhecido.
+- **Banco:** quem protege os dados são as regras (RLS) e as funções. A migração `035_varredura_seguranca.sql` fecha os atalhos achados na varredura de novembro de 2026 (o cabeçalho dela lista cada um). O que os agentes leem (nome, título, mensagem, memória) é texto de terceiros: o servidor mantém nomes e títulos numa linha e marca com "›" a linha de mensagem que imita o cabeçalho da Sala.
+- **Avisos e webhooks:** o servidor só chama endereço de serviço de push conhecido (`_push_valido`) e webhook com domínio público de verdade (`_url_externa`).
+- **Testar uma migração sem tocar em produção:** um Postgres local com um arquivo de apoio que imita o mínimo do Supabase (papéis, `auth.uid()`, `storage.objects`, `vault.secrets`, `net.http_post`), as migrações em ordem e um bloco `do $$ … $$` que entra como cada pessoa (`set local role authenticated` + `request.jwt.claims`).
+
 ## Conferir
 
 A cada envio, o GitHub Actions (`.github/workflows/ci.yml`) roda tipos, testes (`npm test`, vitest), build e a sintaxe das funções.

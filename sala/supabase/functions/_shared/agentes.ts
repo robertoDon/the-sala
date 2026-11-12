@@ -81,7 +81,7 @@ export const papelDeAgente = (v: unknown) => {
 
 /** "Claude", "ChatGPT", "Claude Code"... a partir do nome que o app deu ao se registrar (OAuth). */
 export function nomeDoApp(cliente: string | null): string {
-  const c = (cliente ?? "").trim();
+  const c = (cliente ?? "").replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim(); // o app escolhe o próprio nome: uma linha só
   const l = c.toLowerCase();
   if (l.includes("claude code")) return "Claude Code";
   if (l.includes("claude")) return "Claude";

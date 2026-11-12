@@ -85,10 +85,20 @@ async function cifrar(p256dh: string, auth: string, texto: string) {
   return juntar(sal, rs, new Uint8Array([as.length]), as, cifra);
 }
 
+// O endereço de aviso vem do navegador da pessoa, e o servidor faz POST nele. Só vale serviço de push conhecido
+// (a mesma lista do banco, em _push_valido): nada de endereço interno nem de terceiro.
+const PUSH = /^([a-z0-9-]+\.)*(googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)$/;
+const pushValido = (endpoint: string) => {
+  try { const u = new URL(endpoint); return u.protocol === "https:" && !u.port && !u.username && PUSH.test(u.hostname.toLowerCase()); } catch { return false; }
+};
+
 async function empurrar(i: { endpoint: string; p256dh: string; auth: string }, dados: unknown, urgente: boolean) {
+  if (!pushValido(i.endpoint)) return 410; // some da lista, como inscrição vencida
   const { publica } = await vapid();
   const r = await fetch(i.endpoint, {
     method: "POST",
+    redirect: "manual",
+    signal: AbortSignal.timeout(10_000), // um serviço que não responde não segura os avisos dos outros
     headers: {
       Authorization: `vapid t=${await jwt(i.endpoint)}, k=${publica}`,
       "Content-Encoding": "aes128gcm",
@@ -153,13 +163,21 @@ const CORS = {
 };
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
+// compara os resumos, byte a byte até o fim: o tempo da resposta não conta quantos caracteres do segredo estavam certos
+async function mesmoSegredo(a: string, b: string) {
+  const [x, y] = (await Promise.all([a, b].map((s) => crypto.subtle.digest("SHA-256", txt(s))))).map((h) => new Uint8Array(h));
+  let d = 0;
+  for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i];
+  return d === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   if (req.method !== "POST") return new Response("ok");
   // teste do "responder sozinho", pedido pela própria pessoa no app (token de sessão, sem x-aviso)
   if (!req.headers.get("x-aviso") && req.headers.get("authorization")) return await testarDespertador(req);
   if (!segredoAviso) segredoAviso = (await db.rpc("segredo_aviso")).data as string;
-  if (!segredoAviso || req.headers.get("x-aviso") !== segredoAviso) return new Response("não", { status: 401 });
+  if (!segredoAviso || !(await mesmoSegredo(req.headers.get("x-aviso") ?? "", segredoAviso))) return new Response("não", { status: 401 });
 
   const corpo = await req.json().catch(() => ({}));
   if (corpo.tarefa) return await avisarTarefa(Number(corpo.tarefa));
@@ -396,6 +414,8 @@ async function despertar(id: number, so: { user_id: string; agente: string } | n
 async function disparar(url: string, chave: string, texto: string) {
   const r = await fetch(url, {
     method: "POST",
+    redirect: "manual",
+    signal: AbortSignal.timeout(20_000),
     headers: { Authorization: `Bearer ${chave}`, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
     body: JSON.stringify({ text: texto }),
   });

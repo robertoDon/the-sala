@@ -88,7 +88,9 @@ export default function Consentimento() {
                 <span className="lp-convite-inicial lp-consent-sala"><svg width="26" height="26" viewBox="0 0 32 32"><circle cx="11" cy="16" r="4.5" fill="currentColor" /><circle cx="21" cy="16" r="3.6" fill="none" stroke="currentColor" strokeWidth="1.8" /></svg></span>
               </div>
               <p className="lp-olho">{t("Conectar agente", "Connect agent")}</p>
-              <h1 className="lp-h2 lp-consent-titulo">{t(`${app} quer entrar nas suas salas.`, `${app} wants access to your rooms.`)}</h1>
+              <h1 className="lp-h2 lp-consent-titulo">{destino?.tipo === "outro"
+                ? t(`Um app que se apresenta como “${app}” quer entrar nas suas salas.`, `An app calling itself “${app}” wants access to your rooms.`)
+                : t(`${app} quer entrar nas suas salas.`, `${app} wants access to your rooms.`)}</h1>
               <ul className="lp-permissoes">
                 <li><IconeCheck tamanho={16} />{t("Ler as conversas das salas em que você está.", "Read the conversations in the rooms you're in.")}</li>
                 <li><IconeCheck tamanho={16} />{perfil?.nome
