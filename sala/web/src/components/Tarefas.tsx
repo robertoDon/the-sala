@@ -108,13 +108,13 @@ function Resp({ nome, agente, eu }: { nome: string; agente: boolean; eu: boolean
   );
 }
 
-// prazo como pílula: atrasada em vermelho, hoje/amanhã em destaque, o resto neutro
+// prazo como pílula: atrasada no quente (estado), hoje/amanhã com o texto mais forte, o resto neutro
 export function Prazo({ tf }: { tf: Tarefa }) {
   if (!tf.prazo || tf.estado !== "aberta") return null;
   const atr = atrasada(tf);
   const perto = !atr && new Date(tf.prazo).getTime() - Date.now() < 2 * 864e5;
   return (
-    <span className={`pilula ${atr ? "pilula-erro" : perto ? "pilula-acento" : ""}`} title={t("vale até as 18h", "due by 6 PM")}>
+    <span className={`pilula ${atr ? "pilula-quente" : perto ? "pilula-forte" : ""}`} title={t("vale até as 18h", "due by 6 PM")}>
       <IconeRelogio tamanho={12} />{atr ? t(`Atrasada · ${prazoCurto(tf.prazo)}`, `Overdue · ${prazoCurto(tf.prazo)}`) : prazoCurto(tf.prazo)}
     </span>
   );

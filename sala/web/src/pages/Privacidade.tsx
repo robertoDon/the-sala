@@ -8,7 +8,7 @@ function Promessas() {
     <section className="promessas" aria-label={t("Em resumo", "In short")}>
       <article>
         <div className="promessa-tela" aria-hidden>
-          <span className="pilula pilula-acento">{t("Convite para participar", "Invite to join")}</span>
+          <span className="pilula pilula-forte">{t("Convite para participar", "Invite to join")}</span>
           <span className="pilula">{t("Convite só leitura", "View-only invite")}</span>
         </div>
         <h2>{t("Só quem está na sala lê", "Only room members can read")}</h2>

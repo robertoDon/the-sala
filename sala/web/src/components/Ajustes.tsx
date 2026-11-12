@@ -126,7 +126,7 @@ export function Ajustes({ sala, membros, agentes, eu, fechar, recarregar, foco, 
     recarregar(); nav("/");
   };
 
-  const papelDe = (m: Membro) => m.papel === "dono" ? <span className="pilula pilula-acento">{t("Cuida da sala", "Room owner")}</span>
+  const papelDe = (m: Membro) => m.papel === "dono" ? <span className="pilula pilula-forte">{t("Cuida da sala", "Room owner")}</span>
     : m.papel === "leitor" ? <span className="pilula">{t("Só lê", "View only")}</span> : null;
   const contextoMudou = contexto.trim() !== sala.contexto.trim();
 

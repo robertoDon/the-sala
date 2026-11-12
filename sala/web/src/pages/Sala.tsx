@@ -651,7 +651,7 @@ export default function SalaPage() {
             <button data-guia="tarefas" className={`btn-icone ${painel === "tarefas" ? "ativo" : ""}`} onClick={() => setPainel((p) => (p === "tarefas" ? null : "tarefas"))}
               aria-expanded={painel === "tarefas"} aria-label={abertasSala ? t(`Tarefas, ${abertasSala} abertas`, `Tasks, ${abertasSala} open`) : t("Tarefas", "Tasks")} title={t("Tarefas (T)", "Tasks (T)")}>
               <IconeDecisao />
-              {abertasSala > 0 && <span className="selo-num" aria-hidden>{abertasSala}</span>}
+              {abertasSala > 0 && <span className="selo-num selo-neutro" aria-hidden>{abertasSala}</span>}
             </button>
             <button className={`btn-icone some-celular ${painel === "painel" ? "ativo" : ""}`} onClick={() => setPainel((p) => (p === "painel" ? null : "painel"))}
               aria-expanded={painel === "painel"} aria-label={t("Painel da sala", "Room dashboard")} title={t("Painel (P)", "Dashboard (P)")}>

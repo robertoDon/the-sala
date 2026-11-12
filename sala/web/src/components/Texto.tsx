@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 // Markdown leve, montado como elementos React (nunca innerHTML): parágrafos, listas, citação,
-// bloco de código, `código`, **negrito**, *itálico*, links e @menções.
+// bloco de código, `código`, **negrito**, *itálico*, links (soltos e [texto](endereço)) e @menções.
 
 // handle: a mesma comparação de nomes do servidor ("Claude Code" = "ClaudeCode")
 export { handle } from "../../../supabase/functions/_shared/agentes";
@@ -17,11 +17,26 @@ export const chamaTodos = (h: string) => TODOS.includes(h);
 export const MENCAO_COLETIVA = new RegExp(`@(${[...AGENTES, ...TODOS].join("|")})(?![\\p{L}\\p{N}_])`, "iu");
 
 const INLINE =
-  /(`[^`\n]+`)|(\*\*[^*\n]+\*\*)|(\*[^*\s\n][^*\n]*\*|(?<![\p{L}\p{N}_])_[^_\s\n][^_\n]*_(?![\p{L}\p{N}_]))|(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])|(@[\p{L}\p{N}_]+(?:[·.][\p{L}\p{N}_]+)*(?:-[\p{L}\p{N}_]+)?)|((?<![\p{L}\p{N}_&/])#\d{1,7}(?![\p{L}\p{N}_]))/gu;
+  /(`[^`\n]+`)|(\[[^\]\n]{1,200}\]\(https?:\/\/[^\s<>()]+(?:\([^\s<>()]*\)[^\s<>()]*)*\))|(\*\*[^*\n]+\*\*)|(\*[^*\s\n][^*\n]*\*|(?<![\p{L}\p{N}_])_[^_\s\n][^_\n]*_(?![\p{L}\p{N}_]))|(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])|(@[\p{L}\p{N}_]+(?:[·.][\p{L}\p{N}_]+)*(?:-[\p{L}\p{N}_]+)?)|((?<![\p{L}\p{N}_&/])#\d{1,7}(?![\p{L}\p{N}_]))/gu;
 
 // "#142" no texto (agentes citam mensagens pelo número): vira um link com o nome de quem escreveu
 // só vira link quando é uma mensagem desta sala; "#12" de uma tarefa ou de outro lugar fica como texto
 export type RefMsg = { rotulo: (id: number) => string | null; ir: (id: number) => void };
+
+const semEsquema = (u: string) => u.replace(/^https?:\/\//, "");
+
+// [texto](https://endereço): só http(s). Se o texto parece outro endereço (ex.: [banco.com](https://outro.com)),
+// mostra o endereço de verdade: o que se lê é sempre para onde o link leva. O destino aparece na dica.
+function linkNomeado(bruto: string, k: string): ReactNode {
+  const corte = bruto.indexOf("](");
+  const rotulo = bruto.slice(1, corte).trim(), url = bruto.slice(corte + 2, -1);
+  let host = "";
+  try { host = new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch { return bruto; }
+  const pareceEndereco = /^(https?:\/\/|www\.)/i.test(rotulo) || /^[^\s/]+\.[a-z]{2,}(\/\S*)?$/i.test(rotulo);
+  const mesmoLugar = semEsquema(rotulo).replace(/^www\./, "").toLowerCase().split(/[/?#]/)[0] === host;
+  const visivel = !rotulo || (pareceEndereco && !mesmoLugar) ? semEsquema(url) : rotulo;
+  return <a key={k} href={url} title={semEsquema(url)} target="_blank" rel="noopener noreferrer">{visivel}</a>;
+}
 
 function inline(texto: string, chamaMim: (m: string) => boolean, chave: string, ref?: RefMsg): ReactNode[] {
   const out: ReactNode[] = [];
@@ -31,11 +46,12 @@ function inline(texto: string, chamaMim: (m: string) => boolean, chave: string, 
     const ini = m.index ?? 0;
     if (ini > ultimo) out.push(texto.slice(ultimo, ini));
     const k = `${chave}-${i++}`;
-    const [tudo, codigo, negrito, italico, link, mencao, numero] = m;
+    const [tudo, codigo, nomeado, negrito, italico, link, mencao, numero] = m;
     if (codigo) out.push(<code key={k}>{codigo.slice(1, -1)}</code>);
+    else if (nomeado) out.push(linkNomeado(nomeado, k));
     else if (negrito) out.push(<strong key={k}>{inline(negrito.slice(2, -2), chamaMim, k, ref)}</strong>);
     else if (italico) out.push(<em key={k}>{italico.slice(1, -1)}</em>);
-    else if (link) out.push(<a key={k} href={link} target="_blank" rel="noopener noreferrer">{link.replace(/^https?:\/\//, "")}</a>);
+    else if (link) out.push(<a key={k} href={link} target="_blank" rel="noopener noreferrer">{semEsquema(link)}</a>);
     else if (mencao) out.push(<span key={k} className={chamaMim(mencao) ? "mencao mencao-eu" : "mencao"}>{mencao}</span>);
     else if (numero && ref) { const id = Number(numero.slice(1)); const r = ref.rotulo(id); out.push(r ? <button key={k} type="button" className="ref-msg" onClick={() => ref.ir(id)}>{r}</button> : numero); }
     else out.push(tudo);

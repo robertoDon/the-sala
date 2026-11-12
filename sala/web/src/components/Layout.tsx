@@ -88,7 +88,8 @@ function Fila({ fila }: { fila: ItemFila[] }) {
 }
 
 // cor fixa por sala (pelo id): ajuda a achar a sala de olho, sem usar o acento, que é só de ação
-const CORES = ["#5B5BD6", "#0D9488", "#D97706", "#DB2777", "#2563EB", "#7C3AED", "#65A30D", "#0891B2"];
+// (tons fechados: a inicial branca tem pelo menos 4.5:1 em cima; nenhum é o roxo de ação)
+const CORES = ["#475569", "#0F766E", "#B45309", "#BE185D", "#1D4ED8", "#86198F", "#4D7C0F", "#0E7490"];
 export const corDaSala = (id: string) => CORES[[...id].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7) % CORES.length];
 
 export async function novaSala(nome: string) {

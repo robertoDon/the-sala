@@ -118,7 +118,7 @@ export function Memoria({ salaId, eu, podeEscrever, nome, fechar, voltar }: Prop
       {texto !== null && !editando && (vendo ? (
         <section className="painel-secao memoria-texto">
           <div className="memoria-versao-topo">
-            <span className="pilula pilula-acento">{t("Versão anterior", "Earlier version")}</span>
+            <span className="pilula">{t("Versão anterior", "Earlier version")}</span>
             <span className="painel-topo-acoes">
               <button className="btn btn-pequeno btn-texto" onClick={() => setVendo(null)}>{t("Ver a atual", "View current")}</button>
               {podeEscrever && <BotaoConfirmar className="btn btn-pequeno" rotulo={t("Voltar para esta", "Restore this version")} aviso={t("A memória volta para esta versão. A atual continua no histórico.", "The memory goes back to this version. The current one stays in the history.")} onConfirmar={() => restaurar(versoes.find((v) => v.id === vendo.id)!)} />}

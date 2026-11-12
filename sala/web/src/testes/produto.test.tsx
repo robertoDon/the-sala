@@ -77,6 +77,29 @@ describe("markdown seguro", () => {
   });
 });
 
+describe("link com texto", () => {
+  const html = (t: string) => renderToStaticMarkup(<Texto texto={t} chamaMim={() => false} />);
+  test("[texto](endereço) vira link com o texto", () => {
+    const h = html("Detalhe em [changelog](https://exemplo.com/changelog).");
+    expect(h).toContain('<a href="https://exemplo.com/changelog" title="exemplo.com/changelog" target="_blank" rel="noopener noreferrer">changelog</a>.');
+  });
+  test("endereço com parênteses fecha no lugar certo", () => {
+    expect(html("[Sala](https://pt.wikipedia.org/wiki/Sala_(arquitetura)) ok")).toContain('href="https://pt.wikipedia.org/wiki/Sala_(arquitetura)"');
+  });
+  test("texto que finge outro endereço mostra o destino de verdade", () => {
+    const h = html("[banco.com](https://outro.example/entrar)");
+    expect(h).toContain(">outro.example/entrar</a>");
+    expect(h).not.toContain(">banco.com<");
+    expect(html("[exemplo.com](https://www.exemplo.com/a)")).toContain(">exemplo.com</a>");
+  });
+  test("só http e https", () => {
+    for (const t of ["[x](javascript:alert(1))", "[x](data:text/html,oi)", "[x](//outro.example)"]) expect(html(t)).not.toContain("<a ");
+  });
+  test("dentro de código fica como está", () => {
+    expect(html("`[a](https://b.example)`")).toBe("<p><code>[a](https://b.example)</code></p>");
+  });
+});
+
 describe("presença e prazos", () => {
   const agora = new Date();
   test("ouvindo agora", () => {

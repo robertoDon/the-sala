@@ -101,11 +101,11 @@ export function Sozinho() {
         <div className="conectar-cartao sozinho-ligado">
           <p className="sozinho-estado"><span className="pilula pilula-ok"><IconeCheck tamanho={12} /> {t("Ligado", "On")}</span>
             <span className="nota">{ligado.ultimo_disparo
-              ? <>{t("último chamado", "last triggered")} {quando(ligado.ultimo_disparo)}{ligado.ultimo_erro ? <> · <span className="atrasada">{ligado.ultimo_erro}</span></> : ""}</>
+              ? <>{t("último chamado", "last triggered")} {quando(ligado.ultimo_disparo)}{ligado.ultimo_erro ? <> · <span className="nota erro">{ligado.ultimo_erro}</span></> : ""}</>
               : t("ainda não foi chamado", "not triggered yet")}</span></p>
           <p>{en ? <>Write <code>@Claude</code> in a room: the answer arrives in about a minute.</> : <>Escreva <code>@Claude</code> numa sala: a resposta chega em cerca de 1 minuto.</>}</p>
           {ligado.ultimo_status === 401 || ligado.ultimo_status === 404 ? (
-            <p className="nota atrasada">{t("A chave não vale mais (a tarefa foi apagada ou gerou chave nova). Desligue e ligue de novo com a chave atual.", "This key is no longer valid (the task was deleted or a new key was generated). Turn auto-reply off and on again with the current key.")}</p>
+            <p className="nota erro">{t("A chave não vale mais (a tarefa foi apagada ou gerou chave nova). Desligue e ligue de novo com a chave atual.", "This key is no longer valid (the task was deleted or a new key was generated). Turn auto-reply off and on again with the current key.")}</p>
           ) : null}
           <div className="linha">
             <button className="btn btn-pequeno" onClick={testar} disabled={indo}>{t("Testar", "Test")}</button>
@@ -147,7 +147,7 @@ export function Sozinho() {
         </div>
       )}
       {msg && (
-        <p className={`sozinho-msg ${msg.ok ? "ok" : "atrasada"}`} role="status">
+        <p className={`sozinho-msg ${msg.ok ? "ok" : "erro"}`} role="status">
           {msg.texto}{msg.link ? <> <a className="link" href={msg.link} target="_blank" rel="noopener noreferrer">{t("Ver a sessão", "View session")}</a></> : null}
         </p>
       )}
@@ -199,7 +199,7 @@ export function SozinhoEventos({ agente }: { agente: string }) {
         <div className="conectar-cartao sozinho-ligado">
           <p className="sozinho-estado"><span className="pilula pilula-ok"><IconeCheck tamanho={12} /> {t("Ligado", "On")}</span>
             <span className="nota">{ativo.ultimo_envio
-              ? <>{t("último chamado", "last triggered")} {quando(ativo.ultimo_envio)}{ativo.ultimo_erro ? <> · <span className="atrasada">{ativo.ultimo_erro}</span></> : ""}</>
+              ? <>{t("último chamado", "last triggered")} {quando(ativo.ultimo_envio)}{ativo.ultimo_erro ? <> · <span className="nota erro">{ativo.ultimo_erro}</span></> : ""}</>
               : t("ainda não foi chamado", "not triggered yet")}</span></p>
           <p>{en ? <>Write <code>@{agente}</code> in a room: it should reply in a minute or two. The {agente} task renews this on its own.</>
             : <>Escreva <code>@{agente}</code> numa sala: ele deve responder em 1 ou 2 minutos. A tarefa do {agente} renova isso sozinha.</>}</p>

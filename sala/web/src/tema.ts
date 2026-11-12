@@ -15,11 +15,11 @@ const escuroAgora = () => atual === "escuro" || (atual === "sistema" && matchMed
 export function aplicarTema() {
   const raiz = document.documentElement;
   if (atual === "sistema") delete raiz.dataset.tema; else raiz.dataset.tema = atual;
-  // a barra do navegador e do iPhone acompanha o tema
+  // a barra do navegador e do iPhone acompanha o tema: a mesma cor do topo da tela (--fundo em styles.css)
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.remove());
   const meta = document.createElement("meta");
   meta.name = "theme-color";
-  meta.content = escuroAgora() ? "#0F1012" : "#FCFCFD";
+  meta.content = escuroAgora() ? "#111214" : "#FFFFFF";
   document.head.appendChild(meta);
 }
 

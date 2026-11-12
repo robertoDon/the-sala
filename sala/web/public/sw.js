@@ -97,7 +97,13 @@ self.addEventListener("push", (e) => {
   })());
 });
 
-async function abrir(url) {
+// só abre endereço do próprio app: o que vier de fora (ou torto) cai na página inicial
+function local(url) {
+  try { const u = new URL(url, self.location.origin); return u.origin === self.location.origin ? u.pathname + u.search + u.hash : "/"; } catch { return "/"; }
+}
+
+async function abrir(destino) {
+  const url = local(destino);
   const janelas = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
   for (const c of janelas) {
     if (new URL(c.url).origin === self.location.origin) { await c.focus(); return c.navigate ? c.navigate(url) : undefined; }
